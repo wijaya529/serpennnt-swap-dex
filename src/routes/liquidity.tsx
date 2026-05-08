@@ -255,23 +255,30 @@ function RemoveLiquidity() {
 
   const { writeContractAsync, isPending } = useWriteContract();
   const [hash, setHash] = useState<`0x${string}` | undefined>();
+  const [txKind, setTxKind] = useState<"approve" | "remove" | null>(null);
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   useEffect(() => {
-    if (isSuccess) {
-      toast.success("Confirmed");
-      refetchPair(); refetchPairData();
-      setHash(undefined);
-    }
+    if (!isSuccess) return;
+    toast.success(txKind === "approve" ? "LP approved" : txKind === "remove" ? "Liquidity removed" : "Confirmed");
+    // Immediate refetch + a couple of follow-ups to beat RPC indexing lag
+    const run = () => { refetchPair(); refetchPairData(); };
+    run();
+    const t1 = setTimeout(run, 1500);
+    const t2 = setTimeout(run, 4000);
+    setHash(undefined);
+    setTxKind(null);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [isSuccess]);
 
   const approveLP = async () => {
     if (!pair) return;
     try {
       const h = await writeContractAsync({ address: pair, abi: ERC20_ABI, functionName: "approve", args: [CONTRACTS.router, maxUint256] });
-      setHash(h); toast.info("Approving LP token…");
+      setTxKind("approve"); setHash(h); toast.info("Approving LP token…");
     } catch (e: any) { toast.error(e?.shortMessage || "Approval failed"); }
   };
+
 
   const remove = async () => {
     if (!address || !pair) return;
@@ -293,7 +300,7 @@ function RemoveLiquidity() {
           args: [tokenA.address, tokenB.address, lpToRemove, (amountAOut * slipBps) / 10000n, (amountBOut * slipBps) / 10000n, address, deadline],
         });
       }
-      setHash(h); toast.info("Removing liquidity…");
+      setTxKind("remove"); setHash(h); toast.info("Removing liquidity…");
     } catch (e: any) { toast.error(e?.shortMessage || "Failed"); }
   };
 
