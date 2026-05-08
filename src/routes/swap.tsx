@@ -53,23 +53,24 @@ function SwapPage() {
     }
   }, [amountIn, tokenIn.decimals]);
 
-  const { data: amountsOut, isFetching: quoting } = useReadContract({
+  const { data: amountsOut, isFetching: quoting, error: quoteError } = useReadContract({
     address: CONTRACTS.router,
     abi: ROUTER_ABI,
     functionName: "getAmountsOut",
     args: parsedIn > 0n && path.length === 2 ? [parsedIn, path] : undefined,
-    query: { enabled: parsedIn > 0n && path.length === 2 },
+    query: { enabled: parsedIn > 0n && path.length === 2, retry: 1 },
   });
 
   const amountOut = (amountsOut as bigint[] | undefined)?.[1] ?? 0n;
   const formattedOut = amountOut > 0n ? formatUnits(amountOut, tokenOut.decimals) : "";
+  const noLiquidity = !!quoteError && parsedIn > 0n;
 
   const minOut = useMemo(() => {
     const slip = Math.max(0, Math.min(50, parseFloat(slippage) || 0));
     return (amountOut * BigInt(Math.floor((100 - slip) * 100))) / 10000n;
   }, [amountOut, slippage]);
 
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+  const { data: allowance, refetch: refetchAllowance, isLoading: allowanceLoading } = useReadContract({
     address: tokenIn.isNative ? undefined : tokenIn.address,
     abi: ERC20_ABI,
     functionName: "allowance",
@@ -77,6 +78,7 @@ function SwapPage() {
     query: { enabled: !!address && !tokenIn.isNative },
   });
 
+  const allowanceReady = tokenIn.isNative || allowance !== undefined;
   const needsApproval = !tokenIn.isNative && (allowance as bigint | undefined ?? 0n) < parsedIn;
 
   const { writeContractAsync, isPending: writing } = useWriteContract();
