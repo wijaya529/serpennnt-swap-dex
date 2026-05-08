@@ -191,18 +191,22 @@ function SwapPage() {
           </button>
         </div>
 
-        <TokenPanel label="To (estimated)" token={tokenOut} setToken={setTokenOut} amount={formattedOut} setAmount={() => {}} balance={balOut.formatted} other={tokenIn} readOnly />
+        <TokenPanel label="To (estimated)" token={tokenOut} setToken={setTokenOut} amount={trimDecimals(formattedOut, 6)} displayAmount={formatAmount(formattedOut)} setAmount={() => {}} balance={balOut.formatted} other={tokenIn} readOnly />
 
-        {price && (
-          <div className="mt-4 text-xs text-muted-foreground flex justify-between px-2">
-            <span>Price</span>
-            <span>1 {tokenIn.symbol} ≈ {price} {tokenOut.symbol}</span>
-          </div>
-        )}
-        {amountOut > 0n && (
-          <div className="mt-1 text-xs text-muted-foreground flex justify-between px-2">
-            <span>Min received ({slippage}%)</span>
-            <span>{formatUnits(minOut, tokenOut.decimals)} {tokenOut.symbol}</span>
+        {(price || amountOut > 0n) && (
+          <div className="mt-4 rounded-xl bg-secondary/30 border border-border/40 px-3 py-2.5 space-y-1.5 text-xs tabular-nums">
+            {price && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Price</span>
+                <span className="text-foreground/90">1 {tokenIn.symbol} ≈ <span className="font-medium">{formatAmount(price)}</span> {tokenOut.symbol}</span>
+              </div>
+            )}
+            {amountOut > 0n && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Min received ({slippage}%)</span>
+                <span className="text-foreground/90"><span className="font-medium">{formatAmount(formatUnits(minOut, tokenOut.decimals))}</span> {tokenOut.symbol}</span>
+              </div>
+            )}
           </div>
         )}
 
