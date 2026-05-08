@@ -300,7 +300,7 @@ function RemoveLiquidity() {
           args: [tokenA.address, tokenB.address, lpToRemove, (amountAOut * slipBps) / 10000n, (amountBOut * slipBps) / 10000n, address, deadline],
         });
       }
-      setHash(h); toast.info("Removing liquidity…");
+      setTxKind("remove"); setHash(h); toast.info("Removing liquidity…");
     } catch (e: any) { toast.error(e?.shortMessage || "Failed"); }
   };
 
