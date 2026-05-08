@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { CONTRACTS, ERC20_ABI, NATIVE_TOKEN, ROUTER_ABI, TOKENS, type TokenInfo } from "@/lib/web3/contracts";
 import { useTokenBalance } from "@/lib/web3/hooks";
+import { formatAmount, trimDecimals } from "@/lib/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/swap")({
@@ -190,18 +191,22 @@ function SwapPage() {
           </button>
         </div>
 
-        <TokenPanel label="To (estimated)" token={tokenOut} setToken={setTokenOut} amount={formattedOut} setAmount={() => {}} balance={balOut.formatted} other={tokenIn} readOnly />
+        <TokenPanel label="To (estimated)" token={tokenOut} setToken={setTokenOut} amount={trimDecimals(formattedOut, 6)} displayAmount={formatAmount(formattedOut)} setAmount={() => {}} balance={balOut.formatted} other={tokenIn} readOnly />
 
-        {price && (
-          <div className="mt-4 text-xs text-muted-foreground flex justify-between px-2">
-            <span>Price</span>
-            <span>1 {tokenIn.symbol} ≈ {price} {tokenOut.symbol}</span>
-          </div>
-        )}
-        {amountOut > 0n && (
-          <div className="mt-1 text-xs text-muted-foreground flex justify-between px-2">
-            <span>Min received ({slippage}%)</span>
-            <span>{formatUnits(minOut, tokenOut.decimals)} {tokenOut.symbol}</span>
+        {(price || amountOut > 0n) && (
+          <div className="mt-4 rounded-xl bg-secondary/30 border border-border/40 px-3 py-2.5 space-y-1.5 text-xs tabular-nums">
+            {price && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Price</span>
+                <span className="text-foreground/90">1 {tokenIn.symbol} ≈ <span className="font-medium">{formatAmount(price)}</span> {tokenOut.symbol}</span>
+              </div>
+            )}
+            {amountOut > 0n && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Min received ({slippage}%)</span>
+                <span className="text-foreground/90"><span className="font-medium">{formatAmount(formatUnits(minOut, tokenOut.decimals))}</span> {tokenOut.symbol}</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -230,31 +235,42 @@ function SwapPage() {
 }
 
 function TokenPanel({
-  label, token, setToken, amount, setAmount, balance, other, readOnly,
+  label, token, setToken, amount, displayAmount, setAmount, balance, other, readOnly,
 }: {
   label: string; token: TokenInfo; setToken: (t: TokenInfo) => void;
-  amount: string; setAmount: (s: string) => void; balance: string; other: TokenInfo; readOnly?: boolean;
+  amount: string; displayAmount?: string; setAmount: (s: string) => void; balance: string; other: TokenInfo; readOnly?: boolean;
 }) {
+  const usdLike = amount && Number(amount) > 0 ? formatAmount(amount) : "0";
   return (
-    <div className="rounded-2xl bg-secondary/40 p-4">
-      <div className="flex justify-between text-xs text-muted-foreground mb-2">
-        <span>{label}</span>
+    <div className="group rounded-2xl bg-secondary/30 hover:bg-secondary/40 border border-border/40 hover:border-primary/30 p-4 transition-all duration-200">
+      <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
+        <span className="uppercase tracking-wider text-[10px] font-medium">{label}</span>
         <button
-          onClick={() => !readOnly && setAmount(balance)}
-          className="hover:text-primary transition-colors"
+          onClick={() => !readOnly && setAmount(trimDecimals(balance, 6))}
+          className="hover:text-primary transition-colors tabular-nums flex items-center gap-1.5"
+          disabled={readOnly}
         >
-          Balance: {Number(balance).toFixed(4)}
+          <span>Balance:</span>
+          <span className="font-medium text-foreground/80">{formatAmount(balance)}</span>
+          {!readOnly && Number(balance) > 0 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-primary/15 text-primary font-semibold">MAX</span>
+          )}
         </button>
       </div>
       <div className="flex items-center gap-3">
         <Input
-          value={amount}
+          value={readOnly ? (displayAmount ?? amount) : amount}
           onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
-          placeholder="0.0"
+          placeholder="0.00"
           readOnly={readOnly}
-          className="border-0 bg-transparent text-2xl font-display p-0 h-auto focus-visible:ring-0"
+          inputMode="decimal"
+          className="border-0 bg-transparent text-3xl font-semibold tracking-tight tabular-nums p-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40"
+          style={{ fontFeatureSettings: '"tnum", "cv11"', WebkitFontSmoothing: "antialiased" }}
         />
         <TokenSelector value={token} onChange={setToken} exclude={other} />
+      </div>
+      <div className="mt-2 text-xs text-muted-foreground/70 tabular-nums">
+        ≈ {usdLike} {token.symbol}
       </div>
     </div>
   );
