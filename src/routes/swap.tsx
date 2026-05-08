@@ -194,9 +194,33 @@ function SwapPage() {
           </button>
         </div>
 
-        <TokenPanel label="To (estimated)" token={tokenOut} setToken={setTokenOut} amount={trimDecimals(formattedOut, 6)} displayAmount={formatAmount(formattedOut)} setAmount={() => {}} balance={balOut.formatted} other={tokenIn} readOnly />
+        <TokenPanel
+          label="To (estimated)"
+          token={tokenOut}
+          setToken={setTokenOut}
+          amount={trimDecimals(formattedOut, 6)}
+          displayAmount={formatAmount(formattedOut)}
+          setAmount={() => {}}
+          balance={balOut.formatted}
+          other={tokenIn}
+          readOnly
+          loading={quoting && parsedIn > 0n}
+        />
 
-        {(price || amountOut > 0n) && (
+        {noLiquidity ? (
+          <div className="mt-4 rounded-xl bg-destructive/10 border border-destructive/30 px-3 py-2.5 flex items-start gap-2 text-xs text-destructive">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <div>
+              <div className="font-semibold">No route found</div>
+              <div className="text-destructive/80 mt-0.5">Pair {tokenIn.symbol}/{tokenOut.symbol} has no liquidity yet. Try a different pair or add liquidity first.</div>
+            </div>
+          </div>
+        ) : quoting && parsedIn > 0n ? (
+          <div className="mt-4 rounded-xl bg-secondary/30 border border-border/40 px-3 py-2.5 space-y-2">
+            <div className="flex justify-between items-center"><Skeleton className="h-3 w-12" /><Skeleton className="h-3 w-32" /></div>
+            <div className="flex justify-between items-center"><Skeleton className="h-3 w-24" /><Skeleton className="h-3 w-28" /></div>
+          </div>
+        ) : (price || amountOut > 0n) ? (
           <div className="mt-4 rounded-xl bg-secondary/30 border border-border/40 px-3 py-2.5 space-y-1.5 text-xs tabular-nums">
             {price && (
               <div className="flex justify-between text-muted-foreground">
@@ -211,7 +235,7 @@ function SwapPage() {
               </div>
             )}
           </div>
-        )}
+        ) : null}
 
         <div className="mt-6">
           {!isConnected ? (
@@ -222,6 +246,16 @@ function SwapPage() {
             <Button disabled className="w-full h-14 text-base">Enter an amount</Button>
           ) : insufficient ? (
             <Button disabled className="w-full h-14 text-base" variant="destructive">Insufficient {tokenIn.symbol}</Button>
+          ) : noLiquidity ? (
+            <Button disabled className="w-full h-14 text-base" variant="destructive">No liquidity for this pair</Button>
+          ) : quoting ? (
+            <Button disabled className="w-full h-14 text-base bg-premium text-primary-foreground/80">
+              <Loader2 className="h-4 w-4 animate-spin" /> Fetching best price…
+            </Button>
+          ) : !allowanceReady && allowanceLoading ? (
+            <Button disabled className="w-full h-14 text-base">
+              <Loader2 className="h-4 w-4 animate-spin" /> Checking allowance…
+            </Button>
           ) : needsApproval ? (
             <Button onClick={onApprove} disabled={busy} className="w-full h-14 text-base bg-premium text-primary-foreground">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : `Approve ${tokenIn.symbol}`}
