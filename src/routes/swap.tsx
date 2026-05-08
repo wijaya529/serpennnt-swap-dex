@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { CONTRACTS, ERC20_ABI, NATIVE_TOKEN, ROUTER_ABI, TOKENS, type TokenInfo } from "@/lib/web3/contracts";
 import { useTokenBalance } from "@/lib/web3/hooks";
+import { formatAmount, trimDecimals } from "@/lib/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/swap")({
