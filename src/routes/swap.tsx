@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from "wagmi";
 import { parseUnits, formatUnits, maxUint256 } from "viem";
-import { ArrowDown, Loader2, Settings } from "lucide-react";
+import { AlertCircle, ArrowDown, Loader2, Settings } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TokenSelector } from "@/components/TokenSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,23 +54,24 @@ function SwapPage() {
     }
   }, [amountIn, tokenIn.decimals]);
 
-  const { data: amountsOut, isFetching: quoting } = useReadContract({
+  const { data: amountsOut, isFetching: quoting, error: quoteError } = useReadContract({
     address: CONTRACTS.router,
     abi: ROUTER_ABI,
     functionName: "getAmountsOut",
     args: parsedIn > 0n && path.length === 2 ? [parsedIn, path] : undefined,
-    query: { enabled: parsedIn > 0n && path.length === 2 },
+    query: { enabled: parsedIn > 0n && path.length === 2, retry: 1 },
   });
 
   const amountOut = (amountsOut as bigint[] | undefined)?.[1] ?? 0n;
   const formattedOut = amountOut > 0n ? formatUnits(amountOut, tokenOut.decimals) : "";
+  const noLiquidity = !!quoteError && parsedIn > 0n;
 
   const minOut = useMemo(() => {
     const slip = Math.max(0, Math.min(50, parseFloat(slippage) || 0));
     return (amountOut * BigInt(Math.floor((100 - slip) * 100))) / 10000n;
   }, [amountOut, slippage]);
 
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+  const { data: allowance, refetch: refetchAllowance, isLoading: allowanceLoading } = useReadContract({
     address: tokenIn.isNative ? undefined : tokenIn.address,
     abi: ERC20_ABI,
     functionName: "allowance",
@@ -77,6 +79,7 @@ function SwapPage() {
     query: { enabled: !!address && !tokenIn.isNative },
   });
 
+  const allowanceReady = tokenIn.isNative || allowance !== undefined;
   const needsApproval = !tokenIn.isNative && (allowance as bigint | undefined ?? 0n) < parsedIn;
 
   const { writeContractAsync, isPending: writing } = useWriteContract();
@@ -191,9 +194,33 @@ function SwapPage() {
           </button>
         </div>
 
-        <TokenPanel label="To (estimated)" token={tokenOut} setToken={setTokenOut} amount={trimDecimals(formattedOut, 6)} displayAmount={formatAmount(formattedOut)} setAmount={() => {}} balance={balOut.formatted} other={tokenIn} readOnly />
+        <TokenPanel
+          label="To (estimated)"
+          token={tokenOut}
+          setToken={setTokenOut}
+          amount={trimDecimals(formattedOut, 6)}
+          displayAmount={formatAmount(formattedOut)}
+          setAmount={() => {}}
+          balance={balOut.formatted}
+          other={tokenIn}
+          readOnly
+          loading={quoting && parsedIn > 0n}
+        />
 
-        {(price || amountOut > 0n) && (
+        {noLiquidity ? (
+          <div className="mt-4 rounded-xl bg-destructive/10 border border-destructive/30 px-3 py-2.5 flex items-start gap-2 text-xs text-destructive">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <div>
+              <div className="font-semibold">No route found</div>
+              <div className="text-destructive/80 mt-0.5">Pair {tokenIn.symbol}/{tokenOut.symbol} has no liquidity yet. Try a different pair or add liquidity first.</div>
+            </div>
+          </div>
+        ) : quoting && parsedIn > 0n ? (
+          <div className="mt-4 rounded-xl bg-secondary/30 border border-border/40 px-3 py-2.5 space-y-2">
+            <div className="flex justify-between items-center"><Skeleton className="h-3 w-12" /><Skeleton className="h-3 w-32" /></div>
+            <div className="flex justify-between items-center"><Skeleton className="h-3 w-24" /><Skeleton className="h-3 w-28" /></div>
+          </div>
+        ) : (price || amountOut > 0n) ? (
           <div className="mt-4 rounded-xl bg-secondary/30 border border-border/40 px-3 py-2.5 space-y-1.5 text-xs tabular-nums">
             {price && (
               <div className="flex justify-between text-muted-foreground">
@@ -208,7 +235,7 @@ function SwapPage() {
               </div>
             )}
           </div>
-        )}
+        ) : null}
 
         <div className="mt-6">
           {!isConnected ? (
@@ -219,6 +246,16 @@ function SwapPage() {
             <Button disabled className="w-full h-14 text-base">Enter an amount</Button>
           ) : insufficient ? (
             <Button disabled className="w-full h-14 text-base" variant="destructive">Insufficient {tokenIn.symbol}</Button>
+          ) : noLiquidity ? (
+            <Button disabled className="w-full h-14 text-base" variant="destructive">No liquidity for this pair</Button>
+          ) : quoting ? (
+            <Button disabled className="w-full h-14 text-base bg-premium text-primary-foreground/80">
+              <Loader2 className="h-4 w-4 animate-spin" /> Fetching best price…
+            </Button>
+          ) : !allowanceReady && allowanceLoading ? (
+            <Button disabled className="w-full h-14 text-base">
+              <Loader2 className="h-4 w-4 animate-spin" /> Checking allowance…
+            </Button>
           ) : needsApproval ? (
             <Button onClick={onApprove} disabled={busy} className="w-full h-14 text-base bg-premium text-primary-foreground">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : `Approve ${tokenIn.symbol}`}
@@ -235,10 +272,10 @@ function SwapPage() {
 }
 
 function TokenPanel({
-  label, token, setToken, amount, displayAmount, setAmount, balance, other, readOnly,
+  label, token, setToken, amount, displayAmount, setAmount, balance, other, readOnly, loading,
 }: {
   label: string; token: TokenInfo; setToken: (t: TokenInfo) => void;
-  amount: string; displayAmount?: string; setAmount: (s: string) => void; balance: string; other: TokenInfo; readOnly?: boolean;
+  amount: string; displayAmount?: string; setAmount: (s: string) => void; balance: string; other: TokenInfo; readOnly?: boolean; loading?: boolean;
 }) {
   const usdLike = amount && Number(amount) > 0 ? formatAmount(amount) : "0";
   return (
@@ -258,15 +295,19 @@ function TokenPanel({
         </button>
       </div>
       <div className="flex items-center gap-3">
-        <Input
-          value={readOnly ? (displayAmount ?? amount) : amount}
-          onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
-          placeholder="0.00"
-          readOnly={readOnly}
-          inputMode="decimal"
-          className="border-0 bg-transparent text-3xl font-semibold tracking-tight tabular-nums p-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40"
-          style={{ fontFeatureSettings: '"tnum", "cv11"', WebkitFontSmoothing: "antialiased" }}
-        />
+        {loading ? (
+          <Skeleton className="h-9 flex-1 rounded-md" />
+        ) : (
+          <Input
+            value={readOnly ? (displayAmount ?? amount) : amount}
+            onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+            placeholder="0.00"
+            readOnly={readOnly}
+            inputMode="decimal"
+            className="border-0 bg-transparent text-3xl font-semibold tracking-tight tabular-nums p-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40"
+            style={{ fontFeatureSettings: '"tnum", "cv11"', WebkitFontSmoothing: "antialiased" }}
+          />
+        )}
         <TokenSelector value={token} onChange={setToken} exclude={other} />
       </div>
       <div className="mt-2 text-xs text-muted-foreground/70 tabular-nums">
