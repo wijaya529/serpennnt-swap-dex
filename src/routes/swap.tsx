@@ -272,10 +272,10 @@ function SwapPage() {
 }
 
 function TokenPanel({
-  label, token, setToken, amount, displayAmount, setAmount, balance, other, readOnly,
+  label, token, setToken, amount, displayAmount, setAmount, balance, other, readOnly, loading,
 }: {
   label: string; token: TokenInfo; setToken: (t: TokenInfo) => void;
-  amount: string; displayAmount?: string; setAmount: (s: string) => void; balance: string; other: TokenInfo; readOnly?: boolean;
+  amount: string; displayAmount?: string; setAmount: (s: string) => void; balance: string; other: TokenInfo; readOnly?: boolean; loading?: boolean;
 }) {
   const usdLike = amount && Number(amount) > 0 ? formatAmount(amount) : "0";
   return (
@@ -295,15 +295,19 @@ function TokenPanel({
         </button>
       </div>
       <div className="flex items-center gap-3">
-        <Input
-          value={readOnly ? (displayAmount ?? amount) : amount}
-          onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
-          placeholder="0.00"
-          readOnly={readOnly}
-          inputMode="decimal"
-          className="border-0 bg-transparent text-3xl font-semibold tracking-tight tabular-nums p-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40"
-          style={{ fontFeatureSettings: '"tnum", "cv11"', WebkitFontSmoothing: "antialiased" }}
-        />
+        {loading ? (
+          <Skeleton className="h-9 flex-1 rounded-md" />
+        ) : (
+          <Input
+            value={readOnly ? (displayAmount ?? amount) : amount}
+            onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+            placeholder="0.00"
+            readOnly={readOnly}
+            inputMode="decimal"
+            className="border-0 bg-transparent text-3xl font-semibold tracking-tight tabular-nums p-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40"
+            style={{ fontFeatureSettings: '"tnum", "cv11"', WebkitFontSmoothing: "antialiased" }}
+          />
+        )}
         <TokenSelector value={token} onChange={setToken} exclude={other} />
       </div>
       <div className="mt-2 text-xs text-muted-foreground/70 tabular-nums">
