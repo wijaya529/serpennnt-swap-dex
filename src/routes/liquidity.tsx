@@ -334,6 +334,21 @@ function RemoveLiquidity() {
       {pairExists ? (
         <div className="mt-4 rounded-2xl bg-secondary/40 p-4 space-y-2 text-sm">
           <Row label="Your LP balance" value={Number(formatUnits(lpBal, 18)).toFixed(6)} />
+          <Row label="LP to remove" value={Number(formatUnits(lpToRemove, 18)).toFixed(6)} />
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">LP allowance</span>
+            {lpBal === 0n ? (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">N/A</span>
+            ) : lpAllowance >= lpBal ? (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">✓ Approved (unlimited)</span>
+            ) : lpToRemove > 0n && lpAllowance >= lpToRemove ? (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">✓ Approved</span>
+            ) : lpAllowance > 0n ? (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">Partial — re-approve needed</span>
+            ) : (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30">Not approved</span>
+            )}
+          </div>
           <Row label={`You will receive ${tokenA.symbol}`} value={Number(formatUnits(amountAOut, tokenA.decimals)).toFixed(6)} />
           <Row label={`You will receive ${tokenB.symbol}`} value={Number(formatUnits(amountBOut, tokenB.decimals)).toFixed(6)} />
         </div>
