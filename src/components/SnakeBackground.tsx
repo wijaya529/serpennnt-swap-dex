@@ -166,19 +166,26 @@ export function SnakeBackground() {
       }
     };
 
-    const tick = (t: number) => {
-      ctx.clearRect(0, 0, width, height);
+    function tick(t: number) {
+      if (paused) return;
+      if (t - lastFrame < targetFrameMs) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      lastFrame = t;
+      ctx!.clearRect(0, 0, width, height);
       drawAmbient(t);
       drawParticles();
       for (const s of snakes) drawSnake(t, s);
       drawSparkle(t);
       raf = requestAnimationFrame(tick);
-    };
+    }
     raf = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
