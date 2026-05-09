@@ -72,7 +72,7 @@ function SwapPage() {
       // Cache quotes briefly so toggling amounts/tokens feels instant.
       staleTime: 8_000,
       gcTime: 60_000,
-      placeholderData: (prev: unknown) => prev,
+      placeholderData: (prev) => prev,
     },
   });
 
