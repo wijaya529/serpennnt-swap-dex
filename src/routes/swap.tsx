@@ -54,12 +54,26 @@ function SwapPage() {
     }
   }, [amountIn, tokenIn.decimals]);
 
+  // Debounce parsedIn so rapid typing does not refetch on every keystroke.
+  const [debouncedIn, setDebouncedIn] = useState<bigint>(0n);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedIn(parsedIn), 250);
+    return () => clearTimeout(t);
+  }, [parsedIn]);
+
   const { data: amountsOut, isFetching: quoting, error: quoteError } = useReadContract({
     address: CONTRACTS.router,
     abi: ROUTER_ABI,
     functionName: "getAmountsOut",
-    args: parsedIn > 0n && path.length === 2 ? [parsedIn, path] : undefined,
-    query: { enabled: parsedIn > 0n && path.length === 2, retry: 1 },
+    args: debouncedIn > 0n && path.length === 2 ? [debouncedIn, path] : undefined,
+    query: {
+      enabled: debouncedIn > 0n && path.length === 2,
+      retry: 1,
+      // Cache quotes briefly so toggling amounts/tokens feels instant.
+      staleTime: 8_000,
+      gcTime: 60_000,
+      placeholderData: (prev: unknown) => prev,
+    },
   });
 
   const amountOut = (amountsOut as bigint[] | undefined)?.[1] ?? 0n;
