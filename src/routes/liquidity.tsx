@@ -171,8 +171,13 @@ function AddLiquidity() {
       <Panel label="Token B" token={tokenB} setToken={setTokenB} amount={amountB} setAmount={setAmountB} balance={balB.formatted} other={tokenA} />
 
       {pairExists && reserves && (
-        <div className="mt-4 text-xs text-muted-foreground space-y-1 px-2">
-          <div className="flex justify-between"><span>Pool reserves</span><span className="font-mono">{Number(formatUnits(reserves[0], 18)).toFixed(4)} / {Number(formatUnits(reserves[1], 18)).toFixed(4)}</span></div>
+        <div className="mt-4 rounded-xl bg-secondary/30 border border-border/40 px-3 py-2.5 text-xs tabular-nums">
+          <div className="flex justify-between text-muted-foreground">
+            <span>Pool reserves</span>
+            <span className="text-foreground/90 font-medium">
+              {formatAmount(formatUnits(reserves[0], 18))} / {formatAmount(formatUnits(reserves[1], 18))}
+            </span>
+          </div>
         </div>
       )}
 
