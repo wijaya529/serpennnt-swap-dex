@@ -345,9 +345,9 @@ function RemoveLiquidity() {
       </div>
 
       {pairExists ? (
-        <div className="mt-4 rounded-2xl bg-secondary/40 p-4 space-y-2 text-sm">
-          <Row label="Your LP balance" value={Number(formatUnits(lpBal, 18)).toFixed(6)} />
-          <Row label="LP to remove" value={Number(formatUnits(lpToRemove, 18)).toFixed(6)} />
+        <div className="mt-4 rounded-2xl bg-secondary/30 border border-border/40 p-4 space-y-2 text-sm tabular-nums">
+          <Row label="Your LP balance" value={formatAmount(formatUnits(lpBal, 18))} />
+          <Row label="LP to remove" value={formatAmount(formatUnits(lpToRemove, 18))} />
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">LP allowance</span>
             {lpBal === 0n ? (
@@ -362,8 +362,8 @@ function RemoveLiquidity() {
               <span className="text-xs px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30">Not approved</span>
             )}
           </div>
-          <Row label={`You will receive ${tokenA.symbol}`} value={Number(formatUnits(amountAOut, tokenA.decimals)).toFixed(6)} />
-          <Row label={`You will receive ${tokenB.symbol}`} value={Number(formatUnits(amountBOut, tokenB.decimals)).toFixed(6)} />
+          <Row label={`You will receive ${tokenA.symbol}`} value={formatAmount(formatUnits(amountAOut, tokenA.decimals))} />
+          <Row label={`You will receive ${tokenB.symbol}`} value={formatAmount(formatUnits(amountBOut, tokenB.decimals))} />
         </div>
       ) : (
         <div className="mt-4 rounded-2xl bg-secondary/40 p-4 text-sm text-muted-foreground text-center">
