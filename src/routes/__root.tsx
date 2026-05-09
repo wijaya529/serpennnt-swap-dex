@@ -3,6 +3,7 @@ import appCss from "../styles.css?url";
 import { Web3Provider } from "@/components/Web3Provider";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/sonner";
+import { SnakeBackground } from "@/components/SnakeBackground";
 
 function NotFoundComponent() {
   return (
