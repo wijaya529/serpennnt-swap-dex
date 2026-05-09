@@ -396,23 +396,42 @@ function RemoveLiquidity() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between">
+    <div className="flex justify-between items-center">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-mono">{value}</span>
+      <span className="font-medium text-foreground/90 tabular-nums" style={{ fontFeatureSettings: '"tnum"' }}>{value}</span>
     </div>
   );
 }
 
 function Panel({ label, token, setToken, amount, setAmount, balance, other }: any) {
   return (
-    <div className="rounded-2xl bg-secondary/40 p-4">
-      <div className="flex justify-between text-xs text-muted-foreground mb-2">
-        <span>{label}</span>
-        <button onClick={() => setAmount(balance)} className="hover:text-primary">Balance: {Number(balance).toFixed(4)}</button>
+    <div className="group rounded-2xl bg-secondary/30 hover:bg-secondary/40 border border-border/40 hover:border-primary/30 p-4 transition-all duration-200">
+      <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
+        <span className="uppercase tracking-wider text-[10px] font-medium">{label}</span>
+        <button
+          onClick={() => setAmount(trimDecimals(balance, 6))}
+          className="hover:text-primary transition-colors tabular-nums flex items-center gap-1.5"
+        >
+          <span>Balance:</span>
+          <span className="font-medium text-foreground/80">{formatAmount(balance)}</span>
+          {Number(balance) > 0 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-primary/15 text-primary font-semibold">MAX</span>
+          )}
+        </button>
       </div>
       <div className="flex items-center gap-3">
-        <Input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="0.0" className="border-0 bg-transparent text-2xl font-display p-0 h-auto focus-visible:ring-0" />
+        <Input
+          value={amount}
+          onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+          placeholder="0.00"
+          inputMode="decimal"
+          className="border-0 bg-transparent text-3xl font-semibold tracking-tight tabular-nums p-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40"
+          style={{ fontFeatureSettings: '"tnum"', WebkitFontSmoothing: "antialiased" }}
+        />
         <TokenSelector value={token} onChange={setToken} exclude={other} />
+      </div>
+      <div className="mt-2 text-xs text-muted-foreground/70 tabular-nums">
+        ≈ {amount && Number(amount) > 0 ? formatAmount(amount) : "0"} {token.symbol}
       </div>
     </div>
   );
