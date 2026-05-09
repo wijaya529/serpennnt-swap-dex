@@ -20,6 +20,10 @@ export function SnakeBackground() {
     let dpr = Math.min(window.devicePixelRatio || 1, 2);
     let width = 0;
     let height = 0;
+    let paused = document.hidden;
+    // Throttle to ~30fps on low-end / always (animation is ambient).
+    const targetFrameMs = 1000 / 30;
+    let lastFrame = 0;
 
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -33,6 +37,15 @@ export function SnakeBackground() {
     };
     resize();
     window.addEventListener("resize", resize);
+
+    const onVisibility = () => {
+      paused = document.hidden;
+      if (!paused) {
+        lastFrame = 0;
+        raf = requestAnimationFrame(tick);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     // particles
     const particles = Array.from({ length: 36 }, () => ({
@@ -153,19 +166,26 @@ export function SnakeBackground() {
       }
     };
 
-    const tick = (t: number) => {
-      ctx.clearRect(0, 0, width, height);
+    function tick(t: number) {
+      if (paused) return;
+      if (t - lastFrame < targetFrameMs) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      lastFrame = t;
+      ctx!.clearRect(0, 0, width, height);
       drawAmbient(t);
       drawParticles();
       for (const s of snakes) drawSnake(t, s);
       drawSparkle(t);
       raf = requestAnimationFrame(tick);
-    };
+    }
     raf = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
