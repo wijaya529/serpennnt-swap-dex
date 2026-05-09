@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CONTRACTS, ERC20_ABI, FACTORY_ABI, NATIVE_TOKEN, PAIR_ABI, ROUTER_ABI, TOKENS, type TokenInfo } from "@/lib/web3/contracts";
 import { useTokenBalance } from "@/lib/web3/hooks";
+import { formatAmount, trimDecimals } from "@/lib/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/liquidity")({
