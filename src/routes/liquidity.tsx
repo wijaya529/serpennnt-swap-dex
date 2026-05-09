@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CONTRACTS, ERC20_ABI, FACTORY_ABI, NATIVE_TOKEN, PAIR_ABI, ROUTER_ABI, TOKENS, type TokenInfo } from "@/lib/web3/contracts";
 import { useTokenBalance } from "@/lib/web3/hooks";
+import { formatAmount, trimDecimals } from "@/lib/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/liquidity")({
@@ -170,8 +171,13 @@ function AddLiquidity() {
       <Panel label="Token B" token={tokenB} setToken={setTokenB} amount={amountB} setAmount={setAmountB} balance={balB.formatted} other={tokenA} />
 
       {pairExists && reserves && (
-        <div className="mt-4 text-xs text-muted-foreground space-y-1 px-2">
-          <div className="flex justify-between"><span>Pool reserves</span><span className="font-mono">{Number(formatUnits(reserves[0], 18)).toFixed(4)} / {Number(formatUnits(reserves[1], 18)).toFixed(4)}</span></div>
+        <div className="mt-4 rounded-xl bg-secondary/30 border border-border/40 px-3 py-2.5 text-xs tabular-nums">
+          <div className="flex justify-between text-muted-foreground">
+            <span>Pool reserves</span>
+            <span className="text-foreground/90 font-medium">
+              {formatAmount(formatUnits(reserves[0], 18))} / {formatAmount(formatUnits(reserves[1], 18))}
+            </span>
+          </div>
         </div>
       )}
 
@@ -339,9 +345,9 @@ function RemoveLiquidity() {
       </div>
 
       {pairExists ? (
-        <div className="mt-4 rounded-2xl bg-secondary/40 p-4 space-y-2 text-sm">
-          <Row label="Your LP balance" value={Number(formatUnits(lpBal, 18)).toFixed(6)} />
-          <Row label="LP to remove" value={Number(formatUnits(lpToRemove, 18)).toFixed(6)} />
+        <div className="mt-4 rounded-2xl bg-secondary/30 border border-border/40 p-4 space-y-2 text-sm tabular-nums">
+          <Row label="Your LP balance" value={formatAmount(formatUnits(lpBal, 18))} />
+          <Row label="LP to remove" value={formatAmount(formatUnits(lpToRemove, 18))} />
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">LP allowance</span>
             {lpBal === 0n ? (
@@ -356,8 +362,8 @@ function RemoveLiquidity() {
               <span className="text-xs px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30">Not approved</span>
             )}
           </div>
-          <Row label={`You will receive ${tokenA.symbol}`} value={Number(formatUnits(amountAOut, tokenA.decimals)).toFixed(6)} />
-          <Row label={`You will receive ${tokenB.symbol}`} value={Number(formatUnits(amountBOut, tokenB.decimals)).toFixed(6)} />
+          <Row label={`You will receive ${tokenA.symbol}`} value={formatAmount(formatUnits(amountAOut, tokenA.decimals))} />
+          <Row label={`You will receive ${tokenB.symbol}`} value={formatAmount(formatUnits(amountBOut, tokenB.decimals))} />
         </div>
       ) : (
         <div className="mt-4 rounded-2xl bg-secondary/40 p-4 text-sm text-muted-foreground text-center">
@@ -390,23 +396,42 @@ function RemoveLiquidity() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between">
+    <div className="flex justify-between items-center">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-mono">{value}</span>
+      <span className="font-medium text-foreground/90 tabular-nums" style={{ fontFeatureSettings: '"tnum"' }}>{value}</span>
     </div>
   );
 }
 
 function Panel({ label, token, setToken, amount, setAmount, balance, other }: any) {
   return (
-    <div className="rounded-2xl bg-secondary/40 p-4">
-      <div className="flex justify-between text-xs text-muted-foreground mb-2">
-        <span>{label}</span>
-        <button onClick={() => setAmount(balance)} className="hover:text-primary">Balance: {Number(balance).toFixed(4)}</button>
+    <div className="group rounded-2xl bg-secondary/30 hover:bg-secondary/40 border border-border/40 hover:border-primary/30 p-4 transition-all duration-200">
+      <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
+        <span className="uppercase tracking-wider text-[10px] font-medium">{label}</span>
+        <button
+          onClick={() => setAmount(trimDecimals(balance, 6))}
+          className="hover:text-primary transition-colors tabular-nums flex items-center gap-1.5"
+        >
+          <span>Balance:</span>
+          <span className="font-medium text-foreground/80">{formatAmount(balance)}</span>
+          {Number(balance) > 0 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-primary/15 text-primary font-semibold">MAX</span>
+          )}
+        </button>
       </div>
       <div className="flex items-center gap-3">
-        <Input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="0.0" className="border-0 bg-transparent text-2xl font-display p-0 h-auto focus-visible:ring-0" />
+        <Input
+          value={amount}
+          onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+          placeholder="0.00"
+          inputMode="decimal"
+          className="border-0 bg-transparent text-3xl font-semibold tracking-tight tabular-nums p-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40"
+          style={{ fontFeatureSettings: '"tnum"', WebkitFontSmoothing: "antialiased" }}
+        />
         <TokenSelector value={token} onChange={setToken} exclude={other} />
+      </div>
+      <div className="mt-2 text-xs text-muted-foreground/70 tabular-nums">
+        ≈ {amount && Number(amount) > 0 ? formatAmount(amount) : "0"} {token.symbol}
       </div>
     </div>
   );
