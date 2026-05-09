@@ -3,6 +3,7 @@ import appCss from "../styles.css?url";
 import { Web3Provider } from "@/components/Web3Provider";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/sonner";
+import { SnakeBackground } from "@/components/SnakeBackground";
 
 function NotFoundComponent() {
   return (
@@ -58,6 +59,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   return (
     <Web3Provider>
+      <SnakeBackground />
       <Header />
       <main className="mx-auto max-w-7xl px-6 py-10">
         <Outlet />
