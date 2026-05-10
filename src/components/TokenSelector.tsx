@@ -3,7 +3,7 @@ import { isAddress, getAddress } from "viem";
 import { usePublicClient } from "wagmi";
 import { TOKENS, ERC20_ABI, type TokenInfo } from "@/lib/web3/contracts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertTriangle, ChevronDown, Loader2, Plus, Search } from "lucide-react";
+import { AlertTriangle, ChevronDown, Loader2, Plus, Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
