@@ -52,7 +52,7 @@ function AddLiquidity() {
   const balA = useTokenBalance(tokenA);
   const balB = useTokenBalance(tokenB);
 
-  const { data: pairAddr } = useReadContract({
+  const { data: pairAddr, refetch: refetchPair } = useReadContract({
     address: CONTRACTS.factory,
     abi: FACTORY_ABI,
     functionName: "getPair",
@@ -60,8 +60,9 @@ function AddLiquidity() {
   });
 
   const pairExists = pairAddr && pairAddr !== zeroAddress;
+  const [justCreated, setJustCreated] = useState(false);
 
-  const { data: reservesData } = useReadContracts({
+  const { data: reservesData, refetch: refetchReserves } = useReadContracts({
     contracts: pairExists
       ? [
           { address: pairAddr as `0x${string}`, abi: PAIR_ABI, functionName: "getReserves" },
