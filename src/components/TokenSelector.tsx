@@ -51,6 +51,7 @@ export function TokenSelector({
   const [imported, setImported] = useState<TokenInfo | null>(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importWarning, setImportWarning] = useState<string | null>(null);
 
   const publicClient = usePublicClient();
 
