@@ -163,6 +163,7 @@ export function TokenSelector({
     setCustom(next);
     saveCustomTokens(next);
     onChange(t);
+    setOpen(false);
   };
 
   const handleRemoveCustom = (e: React.MouseEvent, addr: string) => {
@@ -170,8 +171,6 @@ export function TokenSelector({
     const next = custom.filter((c) => c.address.toLowerCase() !== addr.toLowerCase());
     setCustom(next);
     saveCustomTokens(next);
-  };
-    setOpen(false);
   };
 
   return (
