@@ -94,26 +94,60 @@ export function TokenSelector({
     let cancelled = false;
     setImporting(true);
     setImportError(null);
+    setImportWarning(null);
     setImported(null);
 
     (async () => {
+      const safeRead = async <T,>(fn: "name" | "symbol" | "decimals"): Promise<T | null> => {
+        try {
+          return (await publicClient.readContract({
+            address: addr,
+            abi: ERC20_ABI,
+            functionName: fn,
+          })) as T;
+        } catch {
+          return null;
+        }
+      };
+
       try {
-        const [name, symbol, decimals] = await Promise.all([
-          publicClient.readContract({ address: addr, abi: ERC20_ABI, functionName: "name" }),
-          publicClient.readContract({ address: addr, abi: ERC20_ABI, functionName: "symbol" }),
-          publicClient.readContract({ address: addr, abi: ERC20_ABI, functionName: "decimals" }),
+        // Probe code presence first to distinguish EOA from contract.
+        const code = await publicClient.getBytecode({ address: addr }).catch(() => undefined);
+        if (!code || code === "0x") {
+          if (!cancelled) setImportError("No contract found at this address on Arc Testnet");
+          return;
+        }
+
+        const [nameRaw, symbolRaw, decimalsRaw] = await Promise.all([
+          safeRead<string>("name"),
+          safeRead<string>("symbol"),
+          safeRead<number>("decimals"),
         ]);
+
+        const warnings: string[] = [];
+        const short = `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+
+        let symbol = (symbolRaw ?? "").toString().trim();
+        if (!symbol) {
+          symbol = `TKN-${addr.slice(2, 6).toUpperCase()}`;
+          warnings.push("symbol() reverted or empty");
+        }
+        let name = (nameRaw ?? "").toString().trim();
+        if (!name) {
+          name = `Unknown Token (${short})`;
+          warnings.push("name() reverted or empty");
+        }
+        let decimals = decimalsRaw == null ? NaN : Number(decimalsRaw);
+        if (!Number.isFinite(decimals) || decimals < 0 || decimals > 36) {
+          decimals = 18;
+          warnings.push("decimals() reverted — defaulting to 18");
+        }
+
         if (cancelled) return;
-        setImported({
-          address: addr,
-          name: String(name),
-          symbol: String(symbol),
-          decimals: Number(decimals),
-          logo: fallbackLogo,
-        });
-      } catch (e: any) {
-        if (cancelled) return;
-        setImportError("Not a valid ERC-20 contract on Arc Testnet");
+        setImported({ address: addr, name, symbol, decimals, logo: fallbackLogo });
+        if (warnings.length) setImportWarning(warnings.join(" • "));
+      } catch {
+        if (!cancelled) setImportError("Failed to read contract on Arc Testnet");
       } finally {
         if (!cancelled) setImporting(false);
       }
@@ -129,6 +163,14 @@ export function TokenSelector({
     setCustom(next);
     saveCustomTokens(next);
     onChange(t);
+  };
+
+  const handleRemoveCustom = (e: React.MouseEvent, addr: string) => {
+    e.stopPropagation();
+    const next = custom.filter((c) => c.address.toLowerCase() !== addr.toLowerCase());
+    setCustom(next);
+    saveCustomTokens(next);
+  };
     setOpen(false);
   };
 
