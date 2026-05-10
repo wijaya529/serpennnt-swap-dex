@@ -76,9 +76,10 @@ function SwapPage() {
     },
   });
 
-  const amountOut = (amountsOut as bigint[] | undefined)?.[1] ?? 0n;
+  const hasInput = parsedIn > 0n;
+  const amountOut = hasInput ? ((amountsOut as bigint[] | undefined)?.[1] ?? 0n) : 0n;
   const formattedOut = amountOut > 0n ? formatUnits(amountOut, tokenOut.decimals) : "";
-  const noLiquidity = !!quoteError && parsedIn > 0n;
+  const noLiquidity = !!quoteError && hasInput;
 
   const minOut = useMemo(() => {
     const slip = Math.max(0, Math.min(50, parseFloat(slippage) || 0));
@@ -103,12 +104,17 @@ function SwapPage() {
 
   useEffect(() => {
     if (isSuccess && txHash) {
-      toast.success("Transaction confirmed");
-      balIn.refetch();
-      balOut.refetch();
-      refetchAllowance();
+      toast.success("Swap confirmed");
+      // Clear form immediately so estimated output disappears.
       setAmountIn("");
+      setDebouncedIn(0n);
       setTxHash(undefined);
+      // Refetch balances + allowance now and again after a short delay to beat RPC indexing lag.
+      const refresh = () => { balIn.refetch(); balOut.refetch(); refetchAllowance(); };
+      refresh();
+      const t1 = setTimeout(refresh, 1500);
+      const t2 = setTimeout(refresh, 4000);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
     }
   }, [isSuccess, txHash]);
 

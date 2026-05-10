@@ -52,7 +52,7 @@ function AddLiquidity() {
   const balA = useTokenBalance(tokenA);
   const balB = useTokenBalance(tokenB);
 
-  const { data: pairAddr } = useReadContract({
+  const { data: pairAddr, refetch: refetchPair } = useReadContract({
     address: CONTRACTS.factory,
     abi: FACTORY_ABI,
     functionName: "getPair",
@@ -60,8 +60,9 @@ function AddLiquidity() {
   });
 
   const pairExists = pairAddr && pairAddr !== zeroAddress;
+  const [justCreated, setJustCreated] = useState(false);
 
-  const { data: reservesData } = useReadContracts({
+  const { data: reservesData, refetch: refetchReserves } = useReadContracts({
     contracts: pairExists
       ? [
           { address: pairAddr as `0x${string}`, abi: PAIR_ABI, functionName: "getReserves" },
@@ -108,20 +109,42 @@ function AddLiquidity() {
 
   const { writeContractAsync, isPending } = useWriteContract();
   const [hash, setHash] = useState<`0x${string}` | undefined>();
+  const [txKind, setTxKind] = useState<"create" | "approve" | "add" | null>(null);
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
+  // Poll for pair detection after a Create Pair tx confirms — beats RPC indexing lag.
   useEffect(() => {
-    if (isSuccess) {
-      toast.success("Confirmed");
-      balA.refetch(); balB.refetch(); refA(); refB();
-      setHash(undefined);
+    if (!isSuccess) return;
+    if (txKind === "create") {
+      toast.success("Pair created — ready to add liquidity");
+      setJustCreated(true);
+      const run = () => { refetchPair(); refetchReserves(); };
+      run();
+      const t1 = setTimeout(run, 1200);
+      const t2 = setTimeout(run, 3000);
+      const t3 = setTimeout(run, 6000);
+      setHash(undefined); setTxKind(null);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     }
+    if (txKind === "add") toast.success("Liquidity added");
+    else if (txKind === "approve") toast.success("Approved");
+    balA.refetch(); balB.refetch(); refA(); refB(); refetchReserves();
+    if (txKind === "add") { setAmountA(""); setAmountB(""); }
+    setHash(undefined); setTxKind(null);
   }, [isSuccess]);
+
+  // Clear "just created" highlight once the pair is detected on-chain.
+  useEffect(() => {
+    if (pairExists && justCreated) {
+      const t = setTimeout(() => setJustCreated(false), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [pairExists, justCreated]);
 
   const approve = async (t: TokenInfo) => {
     try {
       const h = await writeContractAsync({ address: t.address, abi: ERC20_ABI, functionName: "approve", args: [CONTRACTS.router, maxUint256] });
-      setHash(h); toast.info(`Approving ${t.symbol}…`);
+      setTxKind("approve"); setHash(h); toast.info(`Approving ${t.symbol}…`);
     } catch (e: any) { toast.error(e?.shortMessage || "Approval failed"); }
   };
 
@@ -146,7 +169,7 @@ function AddLiquidity() {
           args: [tokenA.address, tokenB.address, parsedA, parsedB, (parsedA * slipBps) / 10000n, (parsedB * slipBps) / 10000n, address, deadline],
         });
       }
-      setHash(h); toast.info("Adding liquidity…");
+      setTxKind("add"); setHash(h); toast.info("Adding liquidity…");
     } catch (e: any) { toast.error(e?.shortMessage || "Failed"); }
   };
 
@@ -156,9 +179,12 @@ function AddLiquidity() {
         address: CONTRACTS.factory, abi: FACTORY_ABI, functionName: "createPair",
         args: [wrapAddr(tokenA), wrapAddr(tokenB)],
       });
-      setHash(h); toast.info("Creating pair…");
+      setTxKind("create"); setHash(h); toast.info("Creating pair…");
     } catch (e: any) { toast.error(e?.shortMessage || "Failed"); }
   };
+
+  const creating = txKind === "create" && (isPending || confirming);
+  const detectingPair = (isSuccess && txKind === "create") || (justCreated && !pairExists);
 
   const busy = isPending || confirming;
   const insuff = parsedA > balA.value || parsedB > balB.value;
@@ -181,15 +207,25 @@ function AddLiquidity() {
         </div>
       )}
 
+      {justCreated && pairExists && (
+        <div className="mt-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-3 py-2.5 text-xs text-emerald-300 animate-in fade-in slide-in-from-bottom-1 duration-500">
+          ✓ Pair created on-chain — you can now add liquidity.
+        </div>
+      )}
+
       <div className="mt-6 space-y-2">
         {!isConnected ? (
           <Button disabled className="w-full h-14">Connect wallet</Button>
+        ) : detectingPair ? (
+          <Button disabled className="w-full h-14 bg-premium text-primary-foreground/80">
+            <Loader2 className="animate-spin h-4 w-4 mr-2" /> Detecting new pair…
+          </Button>
         ) : !pairExists ? (
           <Button onClick={createPair} disabled={busy} className="w-full h-14 bg-premium text-primary-foreground">
-            {busy ? <Loader2 className="animate-spin h-4 w-4" /> : "Create pair"}
+            {creating ? <><Loader2 className="animate-spin h-4 w-4 mr-2" /> Creating pair…</> : "Create pair"}
           </Button>
         ) : !parsedA || !parsedB ? (
-          <Button disabled className="w-full h-14">Enter amounts</Button>
+          <Button disabled className="w-full h-14 transition-all">Enter amounts</Button>
         ) : insuff ? (
           <Button disabled variant="destructive" className="w-full h-14">Insufficient balance</Button>
         ) : needA ? (
