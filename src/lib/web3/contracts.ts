@@ -64,6 +64,13 @@ export const TOKENS: TokenInfo[] = [
     decimals: 18,
     logo: cmc(1839),
   },
+  {
+    address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+    symbol: "EURC",
+    name: "EURC",
+    decimals: 6,
+    logo: cmc(20641),
+  },
 ];
 
 export const ERC20_ABI = [
