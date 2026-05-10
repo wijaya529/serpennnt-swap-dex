@@ -274,34 +274,47 @@ export function TokenSelector({
               (c) => c.address.toLowerCase() === t.address.toLowerCase(),
             );
             return (
-              <button
+              <div
                 key={t.address + t.symbol}
-                onClick={() => {
-                  onChange(t);
-                  setOpen(false);
-                }}
-                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 transition-all duration-150 hover:translate-x-0.5"
+                className="group w-full flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 transition-all duration-150"
               >
-                <img
-                  src={t.logo}
-                  alt={t.symbol}
-                  className="h-8 w-8 rounded-full"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = fallbackLogo;
+                <button
+                  onClick={() => {
+                    onChange(t);
+                    setOpen(false);
                   }}
-                />
-                <div className="text-left flex-1 min-w-0">
-                  <div className="font-semibold flex items-center gap-2">
-                    {t.symbol}
-                    {isCustom && (
-                      <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium">
-                        Custom
-                      </span>
-                    )}
+                  className="flex items-center gap-3 flex-1 min-w-0 text-left transition-transform duration-150 group-hover:translate-x-0.5"
+                >
+                  <img
+                    src={t.logo}
+                    alt={t.symbol}
+                    className="h-8 w-8 rounded-full"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = fallbackLogo;
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold flex items-center gap-2">
+                      {t.symbol}
+                      {isCustom && (
+                        <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium">
+                          Custom
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">{t.name}</div>
                   </div>
-                  <div className="text-xs text-muted-foreground truncate">{t.name}</div>
-                </div>
-              </button>
+                </button>
+                {isCustom && (
+                  <button
+                    onClick={(e) => handleRemoveCustom(e, t.address)}
+                    aria-label={`Remove ${t.symbol}`}
+                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
