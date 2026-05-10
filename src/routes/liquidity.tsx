@@ -109,20 +109,42 @@ function AddLiquidity() {
 
   const { writeContractAsync, isPending } = useWriteContract();
   const [hash, setHash] = useState<`0x${string}` | undefined>();
+  const [txKind, setTxKind] = useState<"create" | "approve" | "add" | null>(null);
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
+  // Poll for pair detection after a Create Pair tx confirms — beats RPC indexing lag.
   useEffect(() => {
-    if (isSuccess) {
-      toast.success("Confirmed");
-      balA.refetch(); balB.refetch(); refA(); refB();
-      setHash(undefined);
+    if (!isSuccess) return;
+    if (txKind === "create") {
+      toast.success("Pair created — ready to add liquidity");
+      setJustCreated(true);
+      const run = () => { refetchPair(); refetchReserves(); };
+      run();
+      const t1 = setTimeout(run, 1200);
+      const t2 = setTimeout(run, 3000);
+      const t3 = setTimeout(run, 6000);
+      setHash(undefined); setTxKind(null);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     }
+    if (txKind === "add") toast.success("Liquidity added");
+    else if (txKind === "approve") toast.success("Approved");
+    balA.refetch(); balB.refetch(); refA(); refB(); refetchReserves();
+    if (txKind === "add") { setAmountA(""); setAmountB(""); }
+    setHash(undefined); setTxKind(null);
   }, [isSuccess]);
+
+  // Clear "just created" highlight once the pair is detected on-chain.
+  useEffect(() => {
+    if (pairExists && justCreated) {
+      const t = setTimeout(() => setJustCreated(false), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [pairExists, justCreated]);
 
   const approve = async (t: TokenInfo) => {
     try {
       const h = await writeContractAsync({ address: t.address, abi: ERC20_ABI, functionName: "approve", args: [CONTRACTS.router, maxUint256] });
-      setHash(h); toast.info(`Approving ${t.symbol}…`);
+      setTxKind("approve"); setHash(h); toast.info(`Approving ${t.symbol}…`);
     } catch (e: any) { toast.error(e?.shortMessage || "Approval failed"); }
   };
 
@@ -147,7 +169,7 @@ function AddLiquidity() {
           args: [tokenA.address, tokenB.address, parsedA, parsedB, (parsedA * slipBps) / 10000n, (parsedB * slipBps) / 10000n, address, deadline],
         });
       }
-      setHash(h); toast.info("Adding liquidity…");
+      setTxKind("add"); setHash(h); toast.info("Adding liquidity…");
     } catch (e: any) { toast.error(e?.shortMessage || "Failed"); }
   };
 
@@ -157,9 +179,12 @@ function AddLiquidity() {
         address: CONTRACTS.factory, abi: FACTORY_ABI, functionName: "createPair",
         args: [wrapAddr(tokenA), wrapAddr(tokenB)],
       });
-      setHash(h); toast.info("Creating pair…");
+      setTxKind("create"); setHash(h); toast.info("Creating pair…");
     } catch (e: any) { toast.error(e?.shortMessage || "Failed"); }
   };
+
+  const creating = txKind === "create" && (isPending || confirming);
+  const detectingPair = (isSuccess && txKind === "create") || (justCreated && !pairExists);
 
   const busy = isPending || confirming;
   const insuff = parsedA > balA.value || parsedB > balB.value;
