@@ -246,8 +246,9 @@ export function TokenSelector({
                 <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 p-2 text-[11px] text-amber-300">
                   <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                   <span>
-                    Anyone can create a token with any name. Verify the contract address before
-                    trading.
+                    {importWarning
+                      ? `Some metadata could not be read (${importWarning}). Safe fallbacks applied — verify the contract before trading.`
+                      : "Anyone can create a token with any name. Verify the contract address before trading."}
                   </span>
                 </div>
                 <Button
