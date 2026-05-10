@@ -3,7 +3,7 @@ import { isAddress, getAddress } from "viem";
 import { usePublicClient } from "wagmi";
 import { TOKENS, ERC20_ABI, type TokenInfo } from "@/lib/web3/contracts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertTriangle, ChevronDown, Loader2, Plus, Search } from "lucide-react";
+import { AlertTriangle, ChevronDown, Loader2, Plus, Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,6 +51,7 @@ export function TokenSelector({
   const [imported, setImported] = useState<TokenInfo | null>(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importWarning, setImportWarning] = useState<string | null>(null);
 
   const publicClient = usePublicClient();
 
@@ -59,6 +60,7 @@ export function TokenSelector({
       setQ("");
       setImported(null);
       setImportError(null);
+      setImportWarning(null);
       setImporting(false);
     }
   }, [open]);
@@ -92,26 +94,60 @@ export function TokenSelector({
     let cancelled = false;
     setImporting(true);
     setImportError(null);
+    setImportWarning(null);
     setImported(null);
 
     (async () => {
+      const safeRead = async <T,>(fn: "name" | "symbol" | "decimals"): Promise<T | null> => {
+        try {
+          return (await publicClient.readContract({
+            address: addr,
+            abi: ERC20_ABI,
+            functionName: fn,
+          })) as T;
+        } catch {
+          return null;
+        }
+      };
+
       try {
-        const [name, symbol, decimals] = await Promise.all([
-          publicClient.readContract({ address: addr, abi: ERC20_ABI, functionName: "name" }),
-          publicClient.readContract({ address: addr, abi: ERC20_ABI, functionName: "symbol" }),
-          publicClient.readContract({ address: addr, abi: ERC20_ABI, functionName: "decimals" }),
+        // Probe code presence first to distinguish EOA from contract.
+        const code = await publicClient.getBytecode({ address: addr }).catch(() => undefined);
+        if (!code || code === "0x") {
+          if (!cancelled) setImportError("No contract found at this address on Arc Testnet");
+          return;
+        }
+
+        const [nameRaw, symbolRaw, decimalsRaw] = await Promise.all([
+          safeRead<string>("name"),
+          safeRead<string>("symbol"),
+          safeRead<number>("decimals"),
         ]);
+
+        const warnings: string[] = [];
+        const short = `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+
+        let symbol = (symbolRaw ?? "").toString().trim();
+        if (!symbol) {
+          symbol = `TKN-${addr.slice(2, 6).toUpperCase()}`;
+          warnings.push("symbol() reverted or empty");
+        }
+        let name = (nameRaw ?? "").toString().trim();
+        if (!name) {
+          name = `Unknown Token (${short})`;
+          warnings.push("name() reverted or empty");
+        }
+        let decimals = decimalsRaw == null ? NaN : Number(decimalsRaw);
+        if (!Number.isFinite(decimals) || decimals < 0 || decimals > 36) {
+          decimals = 18;
+          warnings.push("decimals() reverted — defaulting to 18");
+        }
+
         if (cancelled) return;
-        setImported({
-          address: addr,
-          name: String(name),
-          symbol: String(symbol),
-          decimals: Number(decimals),
-          logo: fallbackLogo,
-        });
-      } catch (e: any) {
-        if (cancelled) return;
-        setImportError("Not a valid ERC-20 contract on Arc Testnet");
+        setImported({ address: addr, name, symbol, decimals, logo: fallbackLogo });
+        if (warnings.length) setImportWarning(warnings.join(" • "));
+      } catch {
+        if (!cancelled) setImportError("Failed to read contract on Arc Testnet");
       } finally {
         if (!cancelled) setImporting(false);
       }
@@ -128,6 +164,13 @@ export function TokenSelector({
     saveCustomTokens(next);
     onChange(t);
     setOpen(false);
+  };
+
+  const handleRemoveCustom = (e: React.MouseEvent, addr: string) => {
+    e.stopPropagation();
+    const next = custom.filter((c) => c.address.toLowerCase() !== addr.toLowerCase());
+    setCustom(next);
+    saveCustomTokens(next);
   };
 
   return (
@@ -203,8 +246,9 @@ export function TokenSelector({
                 <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 p-2 text-[11px] text-amber-300">
                   <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                   <span>
-                    Anyone can create a token with any name. Verify the contract address before
-                    trading.
+                    {importWarning
+                      ? `Some metadata could not be read (${importWarning}). Safe fallbacks applied — verify the contract before trading.`
+                      : "Anyone can create a token with any name. Verify the contract address before trading."}
                   </span>
                 </div>
                 <Button
@@ -230,34 +274,47 @@ export function TokenSelector({
               (c) => c.address.toLowerCase() === t.address.toLowerCase(),
             );
             return (
-              <button
+              <div
                 key={t.address + t.symbol}
-                onClick={() => {
-                  onChange(t);
-                  setOpen(false);
-                }}
-                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 transition-all duration-150 hover:translate-x-0.5"
+                className="group w-full flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 transition-all duration-150"
               >
-                <img
-                  src={t.logo}
-                  alt={t.symbol}
-                  className="h-8 w-8 rounded-full"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = fallbackLogo;
+                <button
+                  onClick={() => {
+                    onChange(t);
+                    setOpen(false);
                   }}
-                />
-                <div className="text-left flex-1 min-w-0">
-                  <div className="font-semibold flex items-center gap-2">
-                    {t.symbol}
-                    {isCustom && (
-                      <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium">
-                        Custom
-                      </span>
-                    )}
+                  className="flex items-center gap-3 flex-1 min-w-0 text-left transition-transform duration-150 group-hover:translate-x-0.5"
+                >
+                  <img
+                    src={t.logo}
+                    alt={t.symbol}
+                    className="h-8 w-8 rounded-full"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = fallbackLogo;
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold flex items-center gap-2">
+                      {t.symbol}
+                      {isCustom && (
+                        <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium">
+                          Custom
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">{t.name}</div>
                   </div>
-                  <div className="text-xs text-muted-foreground truncate">{t.name}</div>
-                </div>
-              </button>
+                </button>
+                {isCustom && (
+                  <button
+                    onClick={(e) => handleRemoveCustom(e, t.address)}
+                    aria-label={`Remove ${t.symbol}`}
+                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
