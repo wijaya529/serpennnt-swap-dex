@@ -207,15 +207,25 @@ function AddLiquidity() {
         </div>
       )}
 
+      {justCreated && pairExists && (
+        <div className="mt-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-3 py-2.5 text-xs text-emerald-300 animate-in fade-in slide-in-from-bottom-1 duration-500">
+          ✓ Pair created on-chain — you can now add liquidity.
+        </div>
+      )}
+
       <div className="mt-6 space-y-2">
         {!isConnected ? (
           <Button disabled className="w-full h-14">Connect wallet</Button>
+        ) : detectingPair ? (
+          <Button disabled className="w-full h-14 bg-premium text-primary-foreground/80">
+            <Loader2 className="animate-spin h-4 w-4 mr-2" /> Detecting new pair…
+          </Button>
         ) : !pairExists ? (
           <Button onClick={createPair} disabled={busy} className="w-full h-14 bg-premium text-primary-foreground">
-            {busy ? <Loader2 className="animate-spin h-4 w-4" /> : "Create pair"}
+            {creating ? <><Loader2 className="animate-spin h-4 w-4 mr-2" /> Creating pair…</> : "Create pair"}
           </Button>
         ) : !parsedA || !parsedB ? (
-          <Button disabled className="w-full h-14">Enter amounts</Button>
+          <Button disabled className="w-full h-14 transition-all">Enter amounts</Button>
         ) : insuff ? (
           <Button disabled variant="destructive" className="w-full h-14">Insufficient balance</Button>
         ) : needA ? (
