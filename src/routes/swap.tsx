@@ -76,9 +76,10 @@ function SwapPage() {
     },
   });
 
-  const amountOut = (amountsOut as bigint[] | undefined)?.[1] ?? 0n;
+  const hasInput = parsedIn > 0n;
+  const amountOut = hasInput ? ((amountsOut as bigint[] | undefined)?.[1] ?? 0n) : 0n;
   const formattedOut = amountOut > 0n ? formatUnits(amountOut, tokenOut.decimals) : "";
-  const noLiquidity = !!quoteError && parsedIn > 0n;
+  const noLiquidity = !!quoteError && hasInput;
 
   const minOut = useMemo(() => {
     const slip = Math.max(0, Math.min(50, parseFloat(slippage) || 0));
