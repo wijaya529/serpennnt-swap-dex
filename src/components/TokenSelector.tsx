@@ -60,6 +60,7 @@ export function TokenSelector({
       setQ("");
       setImported(null);
       setImportError(null);
+      setImportWarning(null);
       setImporting(false);
     }
   }, [open]);
