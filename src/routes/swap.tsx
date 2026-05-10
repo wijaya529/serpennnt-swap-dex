@@ -104,12 +104,17 @@ function SwapPage() {
 
   useEffect(() => {
     if (isSuccess && txHash) {
-      toast.success("Transaction confirmed");
-      balIn.refetch();
-      balOut.refetch();
-      refetchAllowance();
+      toast.success("Swap confirmed");
+      // Clear form immediately so estimated output disappears.
       setAmountIn("");
+      setDebouncedIn(0n);
       setTxHash(undefined);
+      // Refetch balances + allowance now and again after a short delay to beat RPC indexing lag.
+      const refresh = () => { balIn.refetch(); balOut.refetch(); refetchAllowance(); };
+      refresh();
+      const t1 = setTimeout(refresh, 1500);
+      const t2 = setTimeout(refresh, 4000);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
     }
   }, [isSuccess, txHash]);
 
