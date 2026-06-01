@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAccount, useBalance, useReadContracts } from "wagmi";
-import { ERC20_ABI, TOKENS } from "@/lib/web3/contracts";
+import { ERC20_ABI, useChainConfig, type TokenInfo } from "@/lib/web3/contracts";
 import { formatUnits } from "viem";
 import { Wallet } from "lucide-react";
-import { arcTestnet } from "@/lib/web3/chain";
 
 export const Route = createFileRoute("/portfolio")({
   component: Portfolio,
@@ -16,12 +15,13 @@ export const Route = createFileRoute("/portfolio")({
 });
 
 function Portfolio() {
+  const cfg = useChainConfig();
   const { address, isConnected } = useAccount();
   const native = useBalance({ address, query: { enabled: !!address } });
 
-  const erc20s = TOKENS.filter((t) => !t.isNative);
+  const erc20s = cfg.tokens.filter((t: TokenInfo) => !t.isNative);
   const { data } = useReadContracts({
-    contracts: erc20s.map((t) => ({
+    contracts: erc20s.map((t: TokenInfo) => ({
       address: t.address,
       abi: ERC20_ABI,
       functionName: "balanceOf" as const,
@@ -35,7 +35,7 @@ function Portfolio() {
       <div className="max-w-md mx-auto glass rounded-3xl p-12 text-center shadow-elegant">
         <Wallet className="h-12 w-12 mx-auto text-primary mb-4" />
         <h1 className="text-2xl font-display font-semibold">Connect your wallet</h1>
-        <p className="text-muted-foreground mt-2">Connect to view your portfolio on Arc Testnet.</p>
+        <p className="text-muted-foreground mt-2">Connect to view your portfolio on {cfg.name}.</p>
       </div>
     );
   }
@@ -45,6 +45,7 @@ function Portfolio() {
       <div>
         <h1 className="text-4xl font-display font-semibold">Portfolio</h1>
         <p className="text-muted-foreground mt-2 font-mono text-sm">{address}</p>
+        <p className="text-xs text-muted-foreground mt-1">Network: {cfg.name}</p>
       </div>
 
       <div className="glass rounded-2xl overflow-hidden">
@@ -53,9 +54,14 @@ function Portfolio() {
           <div className="col-span-6 text-right">Balance</div>
         </div>
 
-        <Row symbol={arcTestnet.nativeCurrency.symbol} name="Native" logo={TOKENS[0].logo} balance={native.data ? formatUnits(native.data.value, native.data.decimals) : "0"} />
+        <Row
+          symbol={cfg.nativeToken.symbol}
+          name="Native"
+          logo={cfg.nativeToken.logo}
+          balance={native.data ? formatUnits(native.data.value, native.data.decimals) : "0"}
+        />
 
-        {erc20s.map((t, i) => {
+        {erc20s.map((t: TokenInfo, i: number) => {
           const v = (data?.[i]?.result as bigint | undefined) ?? 0n;
           return <Row key={t.address} symbol={t.symbol} name={t.name} logo={t.logo} balance={formatUnits(v, t.decimals)} />;
         })}

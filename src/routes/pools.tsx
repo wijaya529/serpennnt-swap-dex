@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useReadContract, useReadContracts } from "wagmi";
-import { CONTRACTS, FACTORY_ABI, PAIR_ABI, TOKENS } from "@/lib/web3/contracts";
+import { FACTORY_ABI, PAIR_ABI, useChainConfig, type TokenInfo } from "@/lib/web3/contracts";
 import { formatUnits, zeroAddress } from "viem";
 import { ExternalLink, Layers } from "lucide-react";
 
@@ -15,9 +15,10 @@ export const Route = createFileRoute("/pools")({
 });
 
 function PoolsPage() {
-  // Generate all unique pairs from token list
-  const tokens = TOKENS.filter((t) => !t.isNative);
-  const pairs: Array<[typeof tokens[0], typeof tokens[0]]> = [];
+  const cfg = useChainConfig();
+  const CONTRACTS = cfg.contracts;
+  const tokens = cfg.tokens.filter((t: TokenInfo) => !t.isNative);
+  const pairs: Array<[TokenInfo, TokenInfo]> = [];
   for (let i = 0; i < tokens.length; i++)
     for (let j = i + 1; j < tokens.length; j++) pairs.push([tokens[i], tokens[j]]);
 
@@ -53,7 +54,7 @@ function PoolsPage() {
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-4xl font-display font-semibold">Liquidity Pools</h1>
-          <p className="text-muted-foreground mt-2">All pools on Snake DEX · Total: {factoryLength?.toString() ?? "…"}</p>
+          <p className="text-muted-foreground mt-2">All pools on Snake DEX · {cfg.name} · Total: {factoryLength?.toString() ?? "…"}</p>
         </div>
       </div>
 
@@ -67,7 +68,7 @@ function PoolsPage() {
         {existing.length === 0 && (
           <div className="p-12 text-center text-muted-foreground flex flex-col items-center gap-3">
             <Layers className="h-10 w-10 opacity-40" />
-            No pools yet for the listed tokens. Be the first — head to Liquidity.
+            No pools yet for the listed tokens on {cfg.name}. Be the first — head to Liquidity.
           </div>
         )}
         {existing.map((e, idx) => {
@@ -92,7 +93,7 @@ function PoolsPage() {
               <div className="col-span-3 font-mono text-sm">{Number(formatUnits(rA, a.decimals)).toFixed(4)}</div>
               <div className="col-span-3 font-mono text-sm">{Number(formatUnits(rB, b.decimals)).toFixed(4)}</div>
               <div className="col-span-1 text-right">
-                <a href={`https://testnet.arcscan.app/address/${e.addr}`} target="_blank" rel="noreferrer" className="text-primary hover:text-accent">
+                <a href={`${cfg.explorer}/address/${e.addr}`} target="_blank" rel="noreferrer" className="text-primary hover:text-accent">
                   <ExternalLink className="h-4 w-4 inline" />
                 </a>
               </div>

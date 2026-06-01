@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from "wagmi";
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseUnits, formatUnits, maxUint256 } from "viem";
 import { AlertCircle, ArrowDown, Loader2, Settings } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
-import { CONTRACTS, ERC20_ABI, NATIVE_TOKEN, ROUTER_ABI, TOKENS, type TokenInfo } from "@/lib/web3/contracts";
+import { ERC20_ABI, ROUTER_ABI, useChainConfig, type TokenInfo } from "@/lib/web3/contracts";
 import { useTokenBalance } from "@/lib/web3/hooks";
 import { formatAmount, trimDecimals } from "@/lib/format";
 import { toast } from "sonner";
@@ -19,22 +19,33 @@ export const Route = createFileRoute("/swap")({
   head: () => ({
     meta: [
       { title: "Swap — Snake DEX" },
-      { name: "description", content: "Instant token swaps on Snake DEX, Arc Testnet." },
+      { name: "description", content: "Instant token swaps on Snake DEX." },
     ],
   }),
 });
 
-function wrapAddress(t: TokenInfo) {
-  return t.isNative ? CONTRACTS.weth : t.address;
-}
-
 function SwapPage() {
+  const cfg = useChainConfig();
+  const CONTRACTS = cfg.contracts;
+  const NATIVE_TOKEN = cfg.nativeToken;
+  const TOKENS = cfg.tokens;
+
+  const wrapAddress = (t: TokenInfo) => (t.isNative ? CONTRACTS.weth : t.address);
+
   const { address, isConnected } = useAccount();
   const [tokenIn, setTokenIn] = useState<TokenInfo>(NATIVE_TOKEN);
-  const [tokenOut, setTokenOut] = useState<TokenInfo>(TOKENS[2]);
+  const [tokenOut, setTokenOut] = useState<TokenInfo>(TOKENS[2] ?? TOKENS[1] ?? NATIVE_TOKEN);
   const [amountIn, setAmountIn] = useState("");
   const [slippage, setSlippage] = useState("0.5");
   const [deadlineMin, setDeadlineMin] = useState("20");
+
+  // Reset tokens when the chain changes so we never reference a stale chain's token.
+  useEffect(() => {
+    setTokenIn(NATIVE_TOKEN);
+    setTokenOut(TOKENS[2] ?? TOKENS[1] ?? NATIVE_TOKEN);
+    setAmountIn("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg.chainId]);
 
   const balIn = useTokenBalance(tokenIn);
   const balOut = useTokenBalance(tokenOut);
@@ -44,7 +55,8 @@ function SwapPage() {
     const b = wrapAddress(tokenOut);
     if (a.toLowerCase() === b.toLowerCase()) return [];
     return [a, b];
-  }, [tokenIn, tokenOut]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokenIn, tokenOut, CONTRACTS.weth]);
 
   const parsedIn = useMemo(() => {
     try {
@@ -54,7 +66,6 @@ function SwapPage() {
     }
   }, [amountIn, tokenIn.decimals]);
 
-  // Debounce parsedIn so rapid typing does not refetch on every keystroke.
   const [debouncedIn, setDebouncedIn] = useState<bigint>(0n);
   useEffect(() => {
     const t = setTimeout(() => setDebouncedIn(parsedIn), 250);
@@ -69,7 +80,6 @@ function SwapPage() {
     query: {
       enabled: debouncedIn > 0n && path.length === 2,
       retry: 1,
-      // Cache quotes briefly so toggling amounts/tokens feels instant.
       staleTime: 8_000,
       gcTime: 60_000,
       placeholderData: (prev) => prev,
@@ -100,16 +110,13 @@ function SwapPage() {
   const { writeContractAsync, isPending: writing } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
-  const publicClient = usePublicClient();
 
   useEffect(() => {
     if (isSuccess && txHash) {
       toast.success("Swap confirmed");
-      // Clear form immediately so estimated output disappears.
       setAmountIn("");
       setDebouncedIn(0n);
       setTxHash(undefined);
-      // Refetch balances + allowance now and again after a short delay to beat RPC indexing lag.
       const refresh = () => { balIn.refetch(); balOut.refetch(); refetchAllowance(); };
       refresh();
       const t1 = setTimeout(refresh, 1500);
@@ -232,7 +239,7 @@ function SwapPage() {
             <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
             <div>
               <div className="font-semibold">No route found</div>
-              <div className="text-destructive/80 mt-0.5">Pair {tokenIn.symbol}/{tokenOut.symbol} has no liquidity yet. Try a different pair or add liquidity first.</div>
+              <div className="text-destructive/80 mt-0.5">Pair {tokenIn.symbol}/{tokenOut.symbol} has no liquidity yet on {cfg.shortName}. Try a different pair or add liquidity first.</div>
             </div>
           </div>
         ) : quoting && parsedIn > 0n ? (
