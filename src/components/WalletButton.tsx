@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain, type Connector } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { arcTestnet } from "@/lib/web3/chain";
+import { SUPPORTED_CHAIN_IDS, getChainConfig } from "@/lib/web3/contracts";
 import { Wallet, LogOut, AlertTriangle, Globe } from "lucide-react";
 import metamaskLogo from "@/assets/wallets/metamask.svg.asset.json";
 import okxLogo from "@/assets/wallets/okx.png.asset.json";
@@ -57,7 +57,8 @@ export function WalletButton() {
   const { switchChain } = useSwitchChain();
   const [open, setOpen] = useState(false);
 
-  const wrongNetwork = isConnected && chainId !== arcTestnet.id;
+  const activeCfg = getChainConfig(chainId);
+  const wrongNetwork = isConnected && !SUPPORTED_CHAIN_IDS.includes(chainId);
 
   if (isConnected && address) {
     return (
@@ -66,10 +67,10 @@ export function WalletButton() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => switchChain({ chainId: arcTestnet.id })}
+            onClick={() => switchChain({ chainId: activeCfg.chainId as 5042002 | 984 })}
             className="border-destructive text-destructive hover:bg-destructive/10"
           >
-            <AlertTriangle className="mr-1 h-4 w-4" /> Switch to Arc
+            <AlertTriangle className="mr-1 h-4 w-4" /> Switch to {activeCfg.shortName}
           </Button>
         )}
         <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg glass">
@@ -104,7 +105,7 @@ export function WalletButton() {
                 key={key}
                 disabled={isPending}
                 onClick={() => {
-                  connect({ connector, chainId: arcTestnet.id });
+                  connect({ connector, chainId: activeCfg.chainId as 5042002 | 984 });
                   setOpen(false);
                 }}
                 className="group w-full flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-card/40 hover:border-primary/60 hover:bg-primary/5 hover:shadow-[0_0_24px_-6px_hsl(var(--primary)/0.45)] transition-all duration-200 disabled:opacity-50 hover:-translate-y-0.5"
@@ -130,7 +131,7 @@ export function WalletButton() {
           })}
         </div>
         <p className="text-xs text-muted-foreground mt-4 text-center">
-          By connecting, you agree to interact with smart contracts on Arc Testnet (chain ID 5042002).
+          Active network: <span className="text-foreground/80 font-medium">{activeCfg.name}</span> (chain ID {activeCfg.chainId}). Switch networks from the selector.
         </p>
       </DialogContent>
     </Dialog>

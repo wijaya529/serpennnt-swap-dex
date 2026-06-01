@@ -40,12 +40,8 @@ export function NetworkSelector() {
               key={id}
               onClick={() => {
                 if (isActive) return;
-                if (isConnected) switchChain({ chainId: id });
-                else {
-                  // Without a connected wallet, wagmi still tracks chainId via the config; reload to pick up default chain.
-                  // For UX, just call switchChain anyway — wagmi will throw silently when no connector.
-                  try { switchChain({ chainId: id }); } catch { /* ignore */ }
-                }
+                try { switchChain({ chainId: id as 5042002 | 984 }); } catch { /* ignore */ }
+                void isConnected;
               }}
               className="gap-3 rounded-lg px-2 py-2 cursor-pointer focus:bg-primary/10"
             >
