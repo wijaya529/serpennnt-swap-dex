@@ -12,3 +12,19 @@ export const arcTestnet = defineChain({
   },
   testnet: true,
 });
+
+export const iopnTestnet = defineChain({
+  id: 984,
+  name: "IOPN Testnet",
+  nativeCurrency: { name: "OPN", symbol: "OPN", decimals: 18 },
+  rpcUrls: {
+    default: { http: ["https://testnet-rpc2.iopn.tech"] },
+  },
+  blockExplorers: {
+    default: { name: "IOPN Explorer", url: "https://testnet.iopn.tech" },
+  },
+  testnet: true,
+});
+
+export const SUPPORTED_CHAINS = [arcTestnet, iopnTestnet] as const;
+export const DEFAULT_CHAIN = arcTestnet;
