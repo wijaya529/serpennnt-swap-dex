@@ -1,20 +1,52 @@
 import { useState } from "react";
-import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from "wagmi";
+import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain, type Connector } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { arcTestnet } from "@/lib/web3/chain";
-import { Wallet, LogOut, AlertTriangle } from "lucide-react";
+import { Wallet, LogOut, AlertTriangle, Globe } from "lucide-react";
+import metamaskLogo from "@/assets/wallets/metamask.svg.asset.json";
+import okxLogo from "@/assets/wallets/okx.png.asset.json";
+import rabbyLogo from "@/assets/wallets/rabby.png.asset.json";
 
-const WALLET_META: Record<string, { name: string; icon: string; description: string }> = {
-  metaMask: { name: "MetaMask", icon: "🦊", description: "Most popular Ethereum wallet" },
-  metaMaskSDK: { name: "MetaMask", icon: "🦊", description: "Most popular Ethereum wallet" },
-  okxwallet: { name: "OKX Wallet", icon: "⚫", description: "Multi-chain wallet by OKX" },
-  rabby: { name: "Rabby Wallet", icon: "🐰", description: "Security-first DeFi wallet" },
-  injected: { name: "Browser Wallet", icon: "🌐", description: "Any injected EIP-1193 wallet" },
+type WalletKey = "metamask" | "okx" | "rabby" | "browser";
+
+const WALLET_META: Record<WalletKey, { name: string; description: string; logo?: string }> = {
+  metamask: { name: "MetaMask", description: "Most popular Ethereum wallet", logo: metamaskLogo.url },
+  okx: { name: "OKX Wallet", description: "Multi-chain wallet by OKX", logo: okxLogo.url },
+  rabby: { name: "Rabby Wallet", description: "Security-first DeFi wallet", logo: rabbyLogo.url },
+  browser: { name: "Browser Wallet", description: "Any injected EIP-1193 wallet" },
 };
+
+const ORDER: WalletKey[] = ["metamask", "okx", "rabby", "browser"];
 
 function short(addr?: string) {
   return addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : "";
+}
+
+function pickConnectors(connectors: readonly Connector[]): Array<{ key: WalletKey; connector: Connector }> {
+  const eth: any = typeof window !== "undefined" ? (window as any).ethereum : undefined;
+  const hasOkx = typeof window !== "undefined" && !!(window as any).okxwallet;
+  const hasRabby = !!eth?.isRabby;
+
+  const byId = (id: string) => connectors.find((c) => c.id === id);
+  const injected = connectors.find((c) => c.id === "injected");
+
+  const picks: Partial<Record<WalletKey, Connector>> = {};
+
+  const mm = byId("metaMask") ?? byId("metaMaskSDK");
+  if (mm) picks.metamask = mm;
+  else if (injected && eth?.isMetaMask && !hasRabby) picks.metamask = injected;
+
+  const okx = byId("okxwallet");
+  if (hasOkx && okx) picks.okx = okx;
+
+  const rabby = byId("rabby");
+  if (hasRabby && rabby) picks.rabby = rabby;
+  else if (hasRabby && injected && !picks.rabby) picks.rabby = injected;
+
+  if (injected) picks.browser = injected;
+
+  return ORDER.filter((k) => picks[k]).map((k) => ({ key: k, connector: picks[k]! }));
 }
 
 export function WalletButton() {
@@ -51,6 +83,8 @@ export function WalletButton() {
     );
   }
 
+  const list = pickConnectors(connectors);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -58,57 +92,42 @@ export function WalletButton() {
           <Wallet className="mr-2 h-4 w-4" /> Connect Wallet
         </Button>
       </DialogTrigger>
-      <DialogContent className="glass border-border max-w-md">
+      <DialogContent className="glass border-border max-w-md backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-display text-gradient">Connect a wallet</DialogTitle>
         </DialogHeader>
         <div className="space-y-2 mt-4">
-          {(() => {
-            const seen = new Set<string>();
-            const filtered = connectors.filter((c) => {
-              const eth: any = typeof window !== "undefined" ? (window as any).ethereum : undefined;
-              const okx: any = typeof window !== "undefined" ? (window as any).okxwallet : undefined;
-
-              let key: string | null = null;
-              if (c.id === "metaMask" || c.id === "metaMaskSDK") key = "metamask";
-              else if (c.id === "okxwallet") key = okx ? "okx" : null;
-              else if (c.id === "rabby") key = eth?.isRabby ? "rabby" : null;
-              else if (c.id === "injected") {
-                if (eth?.isRabby) key = "rabby";
-                else if (eth?.isMetaMask && !eth?.isRabby) key = "metamask";
-                else if (okx) key = "okx";
-                else key = null;
-              } else {
-                key = null;
-              }
-
-              if (!key) return false;
-              if (seen.has(key)) return false;
-              seen.add(key);
-              return true;
-            });
-
-            return filtered.map((c) => {
-              const meta = WALLET_META[c.id] ?? { name: c.name, icon: "👛", description: "" };
-              return (
+          {list.map(({ key, connector }) => {
+            const meta = WALLET_META[key];
+            return (
               <button
-                key={c.uid}
+                key={key}
                 disabled={isPending}
                 onClick={() => {
-                  connect({ connector: c, chainId: arcTestnet.id });
+                  connect({ connector, chainId: arcTestnet.id });
                   setOpen(false);
                 }}
-                className="w-full flex items-center gap-4 p-4 rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all disabled:opacity-50"
+                className="group w-full flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-card/40 hover:border-primary/60 hover:bg-primary/5 hover:shadow-[0_0_24px_-6px_hsl(var(--primary)/0.45)] transition-all duration-200 disabled:opacity-50 hover:-translate-y-0.5"
               >
-                <div className="text-2xl">{meta.icon}</div>
+                <div className="h-10 w-10 rounded-lg bg-background/60 ring-1 ring-border/60 flex items-center justify-center overflow-hidden shrink-0 group-hover:ring-primary/40 transition-all">
+                  {meta.logo ? (
+                    <img
+                      src={meta.logo}
+                      alt={`${meta.name} logo`}
+                      className="h-7 w-7 object-contain"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <Globe className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  )}
+                </div>
                 <div className="text-left flex-1">
-                  <div className="font-semibold">{meta.name}</div>
+                  <div className="font-semibold tracking-tight">{meta.name}</div>
                   <div className="text-xs text-muted-foreground">{meta.description}</div>
                 </div>
               </button>
-              );
-            });
-          })()}
+            );
+          })}
         </div>
         <p className="text-xs text-muted-foreground mt-4 text-center">
           By connecting, you agree to interact with smart contracts on Arc Testnet (chain ID 5042002).
