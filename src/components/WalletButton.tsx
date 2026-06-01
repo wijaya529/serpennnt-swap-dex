@@ -106,8 +106,9 @@ export function WalletButton() {
                   <div className="text-xs text-muted-foreground">{meta.description}</div>
                 </div>
               </button>
-            );
-          })}
+              );
+            });
+          })()}
         </div>
         <p className="text-xs text-muted-foreground mt-4 text-center">
           By connecting, you agree to interact with smart contracts on Arc Testnet (chain ID 5042002).
