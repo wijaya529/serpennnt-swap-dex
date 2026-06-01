@@ -63,9 +63,34 @@ export function WalletButton() {
           <DialogTitle className="text-2xl font-display text-gradient">Connect a wallet</DialogTitle>
         </DialogHeader>
         <div className="space-y-2 mt-4">
-          {connectors.map((c) => {
-            const meta = WALLET_META[c.id] ?? { name: c.name, icon: "👛", description: "" };
-            return (
+          {(() => {
+            const seen = new Set<string>();
+            const filtered = connectors.filter((c) => {
+              const eth: any = typeof window !== "undefined" ? (window as any).ethereum : undefined;
+              const okx: any = typeof window !== "undefined" ? (window as any).okxwallet : undefined;
+
+              let key: string | null = null;
+              if (c.id === "metaMask" || c.id === "metaMaskSDK") key = "metamask";
+              else if (c.id === "okxwallet") key = okx ? "okx" : null;
+              else if (c.id === "rabby") key = eth?.isRabby ? "rabby" : null;
+              else if (c.id === "injected") {
+                if (eth?.isRabby) key = "rabby";
+                else if (eth?.isMetaMask && !eth?.isRabby) key = "metamask";
+                else if (okx) key = "okx";
+                else key = null;
+              } else {
+                key = null;
+              }
+
+              if (!key) return false;
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
+
+            return filtered.map((c) => {
+              const meta = WALLET_META[c.id] ?? { name: c.name, icon: "👛", description: "" };
+              return (
               <button
                 key={c.uid}
                 disabled={isPending}
