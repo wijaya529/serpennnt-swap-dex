@@ -1,10 +1,5 @@
-export const CONTRACTS = {
-  factory: "0x903211E8207A66b0e850CB08322198FF4b972BdF" as const,
-  weth: "0xAad965DAD0eF78198426abD83339E61713188496" as const,
-  router: "0x6A0257A3A9DD69f5eC8BB0a5c469CE17b003B643" as const,
-  library: "0x28C96a2Aa02ed9e22b000a336684137B19E426B7" as const,
-  multicall: "0x18efD372cab9d9ff31089b8f28E967Ce87Dd6B65" as const,
-};
+import { useChainId } from "wagmi";
+import { arcTestnet, iopnTestnet } from "./chain";
 
 export type TokenInfo = {
   address: `0x${string}`;
@@ -15,10 +10,31 @@ export type TokenInfo = {
   isNative?: boolean;
 };
 
-// Logos from CoinMarketCap CDN
+export type ChainContracts = {
+  factory: `0x${string}`;
+  weth: `0x${string}`;
+  router: `0x${string}`;
+  multicall: `0x${string}`;
+};
+
 const cmc = (id: number) => `https://s2.coinmarketcap.com/static/img/coins/64x64/${id}.png`;
 
-export const NATIVE_TOKEN: TokenInfo = {
+// IOPN doesn't have a CMC listing — use a gradient mark.
+const IOPN_LOGO =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%234f46e5'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><circle cx='32' cy='32' r='30' fill='url(%23g)'/><text x='50%25' y='56%25' text-anchor='middle' font-family='Inter,system-ui' font-size='20' font-weight='800' fill='white'>OPN</text></svg>`,
+  );
+
+// ---------- Arc Testnet ----------
+const ARC_CONTRACTS: ChainContracts = {
+  factory: "0x903211E8207A66b0e850CB08322198FF4b972BdF",
+  weth: "0xAad965DAD0eF78198426abD83339E61713188496",
+  router: "0x6A0257A3A9DD69f5eC8BB0a5c469CE17b003B643",
+  multicall: "0x18efD372cab9d9ff31089b8f28E967Ce87Dd6B65",
+};
+
+const ARC_NATIVE: TokenInfo = {
   address: "0x0000000000000000000000000000000000000000",
   symbol: "USDC",
   name: "USDC (Native)",
@@ -27,52 +43,89 @@ export const NATIVE_TOKEN: TokenInfo = {
   isNative: true,
 };
 
-export const TOKENS: TokenInfo[] = [
-  NATIVE_TOKEN,
-  {
-    address: CONTRACTS.weth,
-    symbol: "WUSDC",
-    name: "Wrapped USDC",
-    decimals: 18,
-    logo: cmc(3408),
-  },
-  {
-    address: "0xA95648526E7Bac1Bf6FDf70e84A59EA180D913d8",
-    symbol: "BERA",
-    name: "Berachain",
-    decimals: 18,
-    logo: cmc(24647),
-  },
-  {
-    address: "0x6914F7ffAb2008863ce5a96291Ef5fAE1253B6a3",
-    symbol: "TON",
-    name: "Toncoin",
-    decimals: 18,
-    logo: cmc(11419),
-  },
-  {
-    address: "0xDF1e9F36BbB046EfCfa9097127d4a47309aDDc2d",
-    symbol: "HYPE",
-    name: "Hyperliquid",
-    decimals: 18,
-    logo: cmc(32196),
-  },
-  {
-    address: "0x4dc1c2525c79B9Ee3c8491ec6ac336BbED7aC3dF",
-    symbol: "BNB",
-    name: "BNB",
-    decimals: 18,
-    logo: cmc(1839),
-  },
-  {
-    address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
-    symbol: "EURC",
-    name: "EURC",
-    decimals: 6,
-    logo: cmc(20641),
-  },
+const ARC_TOKENS: TokenInfo[] = [
+  ARC_NATIVE,
+  { address: ARC_CONTRACTS.weth, symbol: "WUSDC", name: "Wrapped USDC", decimals: 18, logo: cmc(3408) },
+  { address: "0xA95648526E7Bac1Bf6FDf70e84A59EA180D913d8", symbol: "BERA", name: "Berachain", decimals: 18, logo: cmc(24647) },
+  { address: "0x6914F7ffAb2008863ce5a96291Ef5fAE1253B6a3", symbol: "TON", name: "Toncoin", decimals: 18, logo: cmc(11419) },
+  { address: "0xDF1e9F36BbB046EfCfa9097127d4a47309aDDc2d", symbol: "HYPE", name: "Hyperliquid", decimals: 18, logo: cmc(32196) },
+  { address: "0x4dc1c2525c79B9Ee3c8491ec6ac336BbED7aC3dF", symbol: "BNB", name: "BNB", decimals: 18, logo: cmc(1839) },
+  { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", symbol: "EURC", name: "EURC", decimals: 6, logo: cmc(20641) },
 ];
 
+// ---------- IOPN Testnet ----------
+const IOPN_CONTRACTS: ChainContracts = {
+  factory: "0xBc5189f809109A8CEbD0867A92eCeC409152817D",
+  weth: "0x2D306B3C817F11921404003Bbe14E56bE085fA59",
+  router: "0x8B83F2844fb6346519E0522A8b67fcBC62620196",
+  multicall: "0xaBe9a22F0c65ed9FCB4a210410a3943Ef0a31f85",
+};
+
+const IOPN_NATIVE: TokenInfo = {
+  address: "0x0000000000000000000000000000000000000000",
+  symbol: "OPN",
+  name: "OPN (Native)",
+  decimals: 18,
+  logo: IOPN_LOGO,
+  isNative: true,
+};
+
+const IOPN_TOKENS: TokenInfo[] = [
+  IOPN_NATIVE,
+  { address: IOPN_CONTRACTS.weth, symbol: "WOPN", name: "Wrapped OPN", decimals: 18, logo: IOPN_LOGO },
+  { address: "0x3e01b4d892E0D0A219eF8BBe7e260a6bc8d9B31b", symbol: "USDT", name: "Tether USD", decimals: 18, logo: cmc(825) },
+  { address: "0x92cF36713a5622351c9489D5556B90B321873607", symbol: "BNB", name: "BNB", decimals: 18, logo: cmc(1839) },
+];
+
+// ---------- Per-chain registry ----------
+export type ChainConfig = {
+  chainId: number;
+  name: string;
+  shortName: string;
+  logo: string;
+  explorer: string;
+  contracts: ChainContracts;
+  nativeToken: TokenInfo;
+  tokens: TokenInfo[];
+};
+
+export const CHAIN_CONFIG: Record<number, ChainConfig> = {
+  [arcTestnet.id]: {
+    chainId: arcTestnet.id,
+    name: "Arc Testnet",
+    shortName: "Arc",
+    logo: cmc(3408),
+    explorer: "https://testnet.arcscan.app",
+    contracts: ARC_CONTRACTS,
+    nativeToken: ARC_NATIVE,
+    tokens: ARC_TOKENS,
+  },
+  [iopnTestnet.id]: {
+    chainId: iopnTestnet.id,
+    name: "IOPN Testnet",
+    shortName: "IOPN",
+    logo: IOPN_LOGO,
+    explorer: "https://testnet.iopn.tech",
+    contracts: IOPN_CONTRACTS,
+    nativeToken: IOPN_NATIVE,
+    tokens: IOPN_TOKENS,
+  },
+};
+
+export const SUPPORTED_CHAIN_IDS = Object.keys(CHAIN_CONFIG).map(Number);
+
+export function getChainConfig(chainId?: number): ChainConfig {
+  if (chainId && CHAIN_CONFIG[chainId]) return CHAIN_CONFIG[chainId];
+  return CHAIN_CONFIG[arcTestnet.id];
+}
+
+/** Hook: returns the active chain's config (contracts, tokens, native). */
+export function useChainConfig(): ChainConfig {
+  const id = useChainId();
+  return getChainConfig(id);
+}
+
+// ---------- ABIs (chain-agnostic) ----------
 export const ERC20_ABI = [
   { inputs: [{ name: "owner", type: "address" }], name: "balanceOf", outputs: [{ type: "uint256" }], stateMutability: "view", type: "function" },
   { inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }], name: "allowance", outputs: [{ type: "uint256" }], stateMutability: "view", type: "function" },

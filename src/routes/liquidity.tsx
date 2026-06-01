@@ -7,7 +7,7 @@ import { TokenSelector } from "@/components/TokenSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CONTRACTS, ERC20_ABI, FACTORY_ABI, NATIVE_TOKEN, PAIR_ABI, ROUTER_ABI, TOKENS, type TokenInfo } from "@/lib/web3/contracts";
+import { ERC20_ABI, FACTORY_ABI, PAIR_ABI, ROUTER_ABI, useChainConfig, type TokenInfo } from "@/lib/web3/contracts";
 import { useTokenBalance } from "@/lib/web3/hooks";
 import { formatAmount, trimDecimals } from "@/lib/format";
 import { toast } from "sonner";
@@ -21,8 +21,6 @@ export const Route = createFileRoute("/liquidity")({
     ],
   }),
 });
-
-const wrapAddr = (t: TokenInfo) => (t.isNative ? CONTRACTS.weth : t.address);
 
 function LiquidityPage() {
   const [tab, setTab] = useState("add");
@@ -43,11 +41,25 @@ function LiquidityPage() {
 }
 
 function AddLiquidity() {
+  const cfg = useChainConfig();
+  const CONTRACTS = cfg.contracts;
+  const NATIVE_TOKEN = cfg.nativeToken;
+  const TOKENS = cfg.tokens;
+  const wrapAddr = (t: TokenInfo) => (t.isNative ? CONTRACTS.weth : t.address);
+
   const { address, isConnected } = useAccount();
   const [tokenA, setTokenA] = useState<TokenInfo>(NATIVE_TOKEN);
-  const [tokenB, setTokenB] = useState<TokenInfo>(TOKENS[2]);
+  const [tokenB, setTokenB] = useState<TokenInfo>(TOKENS[2] ?? TOKENS[1] ?? NATIVE_TOKEN);
   const [amountA, setAmountA] = useState("");
   const [amountB, setAmountB] = useState("");
+
+  // Reset tokens whenever the active chain changes so we don't reference stale chain tokens.
+  useEffect(() => {
+    setTokenA(NATIVE_TOKEN);
+    setTokenB(TOKENS[2] ?? TOKENS[1] ?? NATIVE_TOKEN);
+    setAmountA(""); setAmountB("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg.chainId]);
 
   const balA = useTokenBalance(tokenA);
   const balB = useTokenBalance(tokenB);
@@ -112,7 +124,6 @@ function AddLiquidity() {
   const [txKind, setTxKind] = useState<"create" | "approve" | "add" | null>(null);
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
-  // Poll for pair detection after a Create Pair tx confirms — beats RPC indexing lag.
   useEffect(() => {
     if (!isSuccess) return;
     if (txKind === "create") {
@@ -133,7 +144,6 @@ function AddLiquidity() {
     setHash(undefined); setTxKind(null);
   }, [isSuccess]);
 
-  // Clear "just created" highlight once the pair is detected on-chain.
   useEffect(() => {
     if (pairExists && justCreated) {
       const t = setTimeout(() => setJustCreated(false), 2500);
@@ -247,10 +257,22 @@ function AddLiquidity() {
 }
 
 function RemoveLiquidity() {
+  const cfg = useChainConfig();
+  const CONTRACTS = cfg.contracts;
+  const NATIVE_TOKEN = cfg.nativeToken;
+  const TOKENS = cfg.tokens;
+  const wrapAddr = (t: TokenInfo) => (t.isNative ? CONTRACTS.weth : t.address);
+
   const { address, isConnected } = useAccount();
   const [tokenA, setTokenA] = useState<TokenInfo>(NATIVE_TOKEN);
-  const [tokenB, setTokenB] = useState<TokenInfo>(TOKENS[2]);
+  const [tokenB, setTokenB] = useState<TokenInfo>(TOKENS[2] ?? TOKENS[1] ?? NATIVE_TOKEN);
   const [percent, setPercent] = useState(25);
+
+  useEffect(() => {
+    setTokenA(NATIVE_TOKEN);
+    setTokenB(TOKENS[2] ?? TOKENS[1] ?? NATIVE_TOKEN);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg.chainId]);
 
   const { data: pairAddr, refetch: refetchPair } = useReadContract({
     address: CONTRACTS.factory,
@@ -303,7 +325,6 @@ function RemoveLiquidity() {
   useEffect(() => {
     if (!isSuccess) return;
     toast.success(txKind === "approve" ? "LP approved" : txKind === "remove" ? "Liquidity removed" : "Confirmed");
-    // Immediate refetch + a couple of follow-ups to beat RPC indexing lag
     const run = () => { refetchPair(); refetchPairData(); };
     run();
     const t1 = setTimeout(run, 1500);

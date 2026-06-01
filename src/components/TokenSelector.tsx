@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { isAddress, getAddress } from "viem";
-import { usePublicClient } from "wagmi";
-import { TOKENS, ERC20_ABI, type TokenInfo } from "@/lib/web3/contracts";
+import { usePublicClient, useChainId } from "wagmi";
+import { ERC20_ABI, useChainConfig, type TokenInfo } from "@/lib/web3/contracts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertTriangle, ChevronDown, Loader2, Plus, Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 
-const CUSTOM_KEY = "snakedex.customTokens.v1";
+const CUSTOM_KEY_PREFIX = "snakedex.customTokens.v1";
+const keyFor = (chainId: number) => `${CUSTOM_KEY_PREFIX}.${chainId}`;
 
-function loadCustomTokens(): TokenInfo[] {
+function loadCustomTokens(chainId: number): TokenInfo[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(CUSTOM_KEY);
+    const raw = localStorage.getItem(keyFor(chainId));
     if (!raw) return [];
     const parsed = JSON.parse(raw) as TokenInfo[];
     return Array.isArray(parsed) ? parsed : [];
@@ -22,9 +22,9 @@ function loadCustomTokens(): TokenInfo[] {
   }
 }
 
-function saveCustomTokens(list: TokenInfo[]) {
+function saveCustomTokens(chainId: number, list: TokenInfo[]) {
   try {
-    localStorage.setItem(CUSTOM_KEY, JSON.stringify(list));
+    localStorage.setItem(keyFor(chainId), JSON.stringify(list));
   } catch {
     /* ignore */
   }
@@ -45,15 +45,24 @@ export function TokenSelector({
   onChange: (t: TokenInfo) => void;
   exclude?: TokenInfo;
 }) {
+  const chainId = useChainId();
+  const cfg = useChainConfig();
+  const TOKENS = cfg.tokens;
+
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const [custom, setCustom] = useState<TokenInfo[]>(() => loadCustomTokens());
+  const [custom, setCustom] = useState<TokenInfo[]>(() => loadCustomTokens(chainId));
   const [imported, setImported] = useState<TokenInfo | null>(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importWarning, setImportWarning] = useState<string | null>(null);
 
   const publicClient = usePublicClient();
+
+  // Reload custom tokens when chain changes.
+  useEffect(() => {
+    setCustom(loadCustomTokens(chainId));
+  }, [chainId]);
 
   useEffect(() => {
     if (!open) {
@@ -65,7 +74,7 @@ export function TokenSelector({
     }
   }, [open]);
 
-  const allTokens = useMemo(() => [...TOKENS, ...custom], [custom]);
+  const allTokens = useMemo(() => [...TOKENS, ...custom], [TOKENS, custom]);
 
   const trimmed = q.trim();
   const isAddrQuery = isAddress(trimmed);
@@ -81,7 +90,6 @@ export function TokenSelector({
     );
   }, [allTokens, exclude, trimmed]);
 
-  // If a contract address is pasted and not already in our list, fetch from chain.
   useEffect(() => {
     if (!isAddrQuery || !publicClient) return;
     const addr = getAddress(trimmed);
@@ -111,10 +119,9 @@ export function TokenSelector({
       };
 
       try {
-        // Probe code presence first to distinguish EOA from contract.
         const code = await publicClient.getBytecode({ address: addr }).catch(() => undefined);
         if (!code || code === "0x") {
-          if (!cancelled) setImportError("No contract found at this address on Arc Testnet");
+          if (!cancelled) setImportError(`No contract found at this address on ${cfg.name}`);
           return;
         }
 
@@ -147,7 +154,7 @@ export function TokenSelector({
         setImported({ address: addr, name, symbol, decimals, logo: fallbackLogo });
         if (warnings.length) setImportWarning(warnings.join(" • "));
       } catch {
-        if (!cancelled) setImportError("Failed to read contract on Arc Testnet");
+        if (!cancelled) setImportError(`Failed to read contract on ${cfg.name}`);
       } finally {
         if (!cancelled) setImporting(false);
       }
@@ -156,12 +163,12 @@ export function TokenSelector({
     return () => {
       cancelled = true;
     };
-  }, [isAddrQuery, trimmed, publicClient, allTokens]);
+  }, [isAddrQuery, trimmed, publicClient, allTokens, cfg.name]);
 
   const handleImport = (t: TokenInfo) => {
     const next = [...custom.filter((c) => c.address.toLowerCase() !== t.address.toLowerCase()), t];
     setCustom(next);
-    saveCustomTokens(next);
+    saveCustomTokens(chainId, next);
     onChange(t);
     setOpen(false);
   };
@@ -170,7 +177,7 @@ export function TokenSelector({
     e.stopPropagation();
     const next = custom.filter((c) => c.address.toLowerCase() !== addr.toLowerCase());
     setCustom(next);
-    saveCustomTokens(next);
+    saveCustomTokens(chainId, next);
   };
 
   return (
@@ -210,13 +217,12 @@ export function TokenSelector({
           />
         </div>
 
-        {/* Import flow */}
         {isAddrQuery && (importing || importError || imported) && (
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 animate-in fade-in slide-in-from-top-1 duration-200">
             {importing ? (
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                Fetching token from Arc Testnet…
+                Fetching token from {cfg.name}…
               </div>
             ) : importError ? (
               <div className="flex items-start gap-2 text-sm text-destructive">
