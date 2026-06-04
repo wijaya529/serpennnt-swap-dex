@@ -19,12 +19,6 @@ export type ChainContracts = {
 
 const cmc = (id: number) => `https://s2.coinmarketcap.com/static/img/coins/64x64/${id}.png`;
 
-// IOPN doesn't have a CMC listing — use a gradient mark.
-const IOPN_LOGO =
-  "data:image/svg+xml;utf8," +
-  encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%234f46e5'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><circle cx='32' cy='32' r='30' fill='url(%23g)'/><text x='50%25' y='56%25' text-anchor='middle' font-family='Inter,system-ui' font-size='20' font-weight='800' fill='white'>OPN</text></svg>`,
-  );
 
 // ---------- Arc Testnet ----------
 const ARC_CONTRACTS: ChainContracts = {
