@@ -1,67 +1,110 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
-import { CHAIN_CONFIG, SUPPORTED_CHAIN_IDS, getChainConfig } from "@/lib/web3/contracts";
-import { SUPPORTED_CHAINS } from "@/lib/web3/chain";
-import { Copy, ExternalLink, BookOpen, ArrowLeftRight, Droplets, Network, FileCode2, HelpCircle } from "lucide-react";
+import { getChainConfig } from "@/lib/web3/contracts";
+import { arcTestnet } from "@/lib/web3/chain";
+import {
+  Copy,
+  ExternalLink,
+  BookOpen,
+  Sparkles,
+  Rocket,
+  FileCode2,
+  Network,
+  HelpCircle,
+  ArrowLeftRight,
+  Droplets,
+  Plus,
+  Minus,
+  Wallet,
+  Check,
+  Menu,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/docs")({
   head: () => ({
     meta: [
       { title: "Documentation — Shadow LTC DEX" },
-      { name: "description", content: "Learn how to swap tokens, provide liquidity, and use Shadow LTC across supported networks." },
+      { name: "description", content: "Official documentation for Shadow LTC DEX: features, getting started, smart contracts, network info, and FAQ." },
       { property: "og:title", content: "Documentation — Shadow LTC DEX" },
-      { property: "og:description", content: "Guides, supported networks, and smart contract addresses for Shadow LTC DEX." },
+      { property: "og:description", content: "Learn how to swap, create pools, and provide liquidity on Shadow LTC." },
     ],
   }),
   component: DocsPage,
 });
 
 const sections = [
-  { id: "introduction", label: "Introduction", icon: BookOpen },
-  { id: "how-to-swap", label: "How to Swap", icon: ArrowLeftRight },
-  { id: "liquidity-pools", label: "Liquidity Pools", icon: Droplets },
-  { id: "supported-networks", label: "Supported Networks", icon: Network },
+  { id: "overview", label: "Overview", icon: BookOpen },
+  { id: "features", label: "Features", icon: Sparkles },
+  { id: "getting-started", label: "Getting Started", icon: Rocket },
   { id: "smart-contracts", label: "Smart Contracts", icon: FileCode2 },
+  { id: "network", label: "Network Information", icon: Network },
   { id: "faq", label: "FAQ", icon: HelpCircle },
 ] as const;
 
-function copy(text: string) {
-  navigator.clipboard.writeText(text);
-  toast.success("Copied to clipboard");
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(value);
+        setCopied(true);
+        toast.success("Address copied");
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className="p-2 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all"
+      aria-label="Copy address"
+    >
+      {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+    </button>
+  );
 }
 
-function Addr({ label, address, explorer }: { label: string; address: string; explorer: string }) {
+function ContractCard({ label, address, explorer, description }: { label: string; address: string; explorer: string; description: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card/40 px-4 py-3">
-      <div className="min-w-0">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-        <div className="font-mono text-sm text-foreground/90 truncate">{address}</div>
+    <div className="group rounded-xl border border-border/60 bg-card/40 p-5 hover:border-primary/40 hover:bg-card/60 transition-all">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <div className="font-medium text-foreground">{label}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">{description}</div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <CopyButton value={address} />
+          <a
+            href={`${explorer}/address/${address}`}
+            target="_blank"
+            rel="noreferrer"
+            className="p-2 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all"
+            aria-label="View on explorer"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        </div>
       </div>
-      <div className="flex items-center gap-1 shrink-0">
-        <button onClick={() => copy(address)} className="p-2 rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors" aria-label="Copy">
-          <Copy className="h-4 w-4" />
-        </button>
-        <a href={`${explorer}/address/${address}`} target="_blank" rel="noreferrer" className="p-2 rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors" aria-label="View on explorer">
-          <ExternalLink className="h-4 w-4" />
-        </a>
+      <div className="font-mono text-xs sm:text-sm text-foreground/80 break-all bg-background/40 rounded-lg px-3 py-2 border border-border/40">
+        {address}
       </div>
     </div>
   );
 }
 
 function DocsPage() {
-  const [active, setActive] = useState<string>("introduction");
-  const [selectedChain, setSelectedChain] = useState<number>(SUPPORTED_CHAIN_IDS[0]);
+  const [active, setActive] = useState<string>("overview");
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const cfg = getChainConfig(arcTestnet.id);
+  const chain = arcTestnet;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
         if (visible[0]) setActive(visible[0].target.id);
       },
-      { rootMargin: "-30% 0px -60% 0px", threshold: [0, 0.25, 0.5, 1] },
+      { rootMargin: "-25% 0px -65% 0px", threshold: [0, 0.25, 0.5, 1] },
     );
     sections.forEach((s) => {
       const el = document.getElementById(s.id);
@@ -70,209 +113,274 @@ function DocsPage() {
     return () => observer.disconnect();
   }, []);
 
-  const cfg = getChainConfig(selectedChain);
-  const chainMeta = SUPPORTED_CHAINS.find((c) => c.id === selectedChain);
+  const handleNav = (id: string) => {
+    setMobileOpen(false);
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const features = [
+    { icon: ArrowLeftRight, title: "Swap", desc: "Instantly exchange any supported token using deep on-chain liquidity with low slippage and a transparent 0.30% fee." },
+    { icon: Plus, title: "Create Pool", desc: "Permissionlessly launch a new trading pair via the Factory contract — bootstrap markets for any ERC-20 token." },
+    { icon: Droplets, title: "Add Liquidity", desc: "Provide token pairs to earn proportional swap fees. Receive LP tokens that represent your share of the pool." },
+    { icon: Minus, title: "Remove Liquidity", desc: "Withdraw your share of underlying tokens plus accumulated fees at any time — no lockups, fully self-custodial." },
+  ];
+
+  const steps = [
+    { icon: Wallet, title: "Connect Wallet", desc: "Click 'Connect Wallet' in the top right and approve the connection from MetaMask, OKX, or Rabby." },
+    { icon: Sparkles, title: "Select Token", desc: "Open the Swap page and pick the tokens you want to trade. Paste any ERC-20 address to import custom tokens." },
+    { icon: ArrowLeftRight, title: "Swap Assets", desc: "Enter an amount — estimated output, price impact, and minimum received are calculated in real time." },
+    { icon: Check, title: "Confirm Transaction", desc: "Approve the token (one-time) if needed, then confirm in your wallet. Balances refresh automatically." },
+  ];
+
+  const faqs = [
+    { q: "What is Shadow LTC?", a: "Shadow LTC is a non-custodial decentralized exchange built on an automated market maker (AMM) model. It enables permissionless token swaps and liquidity provisioning." },
+    { q: "Is Shadow LTC custodial?", a: "No. You always retain custody of your assets — every action is signed by your own wallet and executed on-chain." },
+    { q: "Which wallets are supported?", a: "MetaMask, OKX Wallet, Rabby Wallet, and any EIP-1193 compatible injected browser wallet." },
+    { q: "What are the trading fees?", a: "Each swap charges a 0.30% fee that is distributed entirely to liquidity providers proportional to their pool share." },
+    { q: "Why do I need to approve a token?", a: "ERC-20 requires authorizing the Router to spend your tokens. This is a one-time per-token approval mandated by the standard." },
+    { q: "What is impermanent loss?", a: "When token prices diverge in a pool, the value of LP positions may underperform simply holding the tokens. Earned fees help offset this." },
+    { q: "Can I list my own token?", a: "Yes. Paste any ERC-20 address in the token selector to import it. Then use Create Pair on the Liquidity page to launch a market." },
+  ];
 
   return (
     <div className="min-h-screen">
       <Header />
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        <div className="mb-10">
-          <div className="text-xs uppercase tracking-[0.3em] text-primary/80 mb-2">Documentation</div>
-          <h1 className="text-4xl md:text-5xl font-display font-semibold tracking-tight text-gradient">Shadow LTC Docs</h1>
-          <p className="mt-3 text-muted-foreground max-w-2xl">Everything you need to swap, provide liquidity, and integrate with the Shadow LTC DEX across supported chains.</p>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-10">
+      {/* Hero */}
+      <div className="relative overflow-hidden border-b border-border/40">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />
+        <div className="mx-auto max-w-7xl px-6 py-14 relative">
+          <div className="text-xs uppercase tracking-[0.35em] text-primary/80 mb-3">Documentation</div>
+          <h1 className="text-4xl md:text-6xl font-display font-semibold tracking-tight text-gradient">
+            Shadow LTC Docs
+          </h1>
+          <p className="mt-4 text-muted-foreground max-w-2xl text-base md:text-lg leading-relaxed">
+            Everything you need to know about trading, providing liquidity, and building on Shadow LTC — the decentralized exchange powering the {chain.name} ecosystem.
+          </p>
+        </div>
+      </div>
+
+      {/* Mobile sidebar toggle */}
+      <div className="lg:hidden sticky top-20 z-40 glass border-b border-border/40">
+        <button
+          onClick={() => setMobileOpen((v) => !v)}
+          className="flex items-center gap-2 w-full px-6 py-3 text-sm font-medium text-foreground"
+        >
+          {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          <span>Browse documentation</span>
+          <span className="ml-auto text-xs text-muted-foreground capitalize">
+            {sections.find((s) => s.id === active)?.label}
+          </span>
+        </button>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-6 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-10">
           {/* Sidebar */}
-          <aside className="lg:sticky lg:top-28 lg:self-start">
+          <aside
+            className={`${mobileOpen ? "block" : "hidden"} lg:block lg:sticky lg:top-28 lg:self-start`}
+          >
             <nav className="rounded-xl border border-border/60 bg-card/40 p-2 glass">
+              <div className="px-3 py-2 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                On this page
+              </div>
               {sections.map((s) => {
                 const Icon = s.icon;
                 const isActive = active === s.id;
                 return (
-                  <a
+                  <button
                     key={s.id}
-                    href={`#${s.id}`}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    onClick={() => handleNav(s.id)}
+                    className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
                       isActive
-                        ? "bg-primary/15 text-primary"
+                        ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_oklch(0.72_0.16_165/0.3)]"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                     }`}
                   >
                     <Icon className="h-4 w-4" />
                     <span>{s.label}</span>
-                  </a>
+                  </button>
                 );
               })}
             </nav>
           </aside>
 
           {/* Content */}
-          <main className="space-y-16 min-w-0">
-            <section id="introduction" className="scroll-mt-28">
-              <h2 className="text-2xl font-display font-semibold mb-4">Introduction</h2>
-              <div className="rounded-xl border border-border/60 bg-card/40 p-6 space-y-3 text-muted-foreground leading-relaxed">
+          <main className="space-y-20 min-w-0 scroll-smooth">
+            {/* Overview */}
+            <section id="overview" className="scroll-mt-32">
+              <div className="flex items-center gap-2 mb-3">
+                <BookOpen className="h-4 w-4 text-primary" />
+                <span className="text-xs uppercase tracking-[0.25em] text-primary/80">Overview</span>
+              </div>
+              <h2 className="text-3xl font-display font-semibold mb-5">What is Shadow LTC?</h2>
+              <div className="rounded-2xl border border-border/60 bg-card/40 p-6 md:p-8 space-y-4 text-muted-foreground leading-relaxed">
                 <p>
-                  <span className="text-foreground font-medium">Shadow LTC</span> is a decentralized exchange (DEX) built on an AMM
-                  (automated market maker) model. It lets anyone swap tokens, create new trading pairs, and earn fees by providing
-                  liquidity — all without intermediaries.
+                  <span className="text-foreground font-medium">Shadow LTC</span> is a decentralized exchange (DEX) built on the
+                  automated market maker (AMM) model. It empowers anyone to swap tokens, bootstrap new markets, and earn fees by
+                  providing liquidity — entirely on-chain and without intermediaries.
                 </p>
                 <p>
-                  The platform is non-custodial: you keep control of your assets at all times through your own wallet. Trades and
-                  liquidity actions execute directly on-chain via audited Uniswap-style Factory and Router smart contracts.
+                  Our mission is to bring frictionless, permissionless token trading to the {chain.name} ecosystem. Every interaction
+                  is non-custodial: your keys, your tokens, your control.
                 </p>
               </div>
             </section>
 
-            <section id="how-to-swap" className="scroll-mt-28">
-              <h2 className="text-2xl font-display font-semibold mb-4">How to Swap</h2>
-              <ol className="space-y-3">
-                {[
-                  "Click 'Connect Wallet' in the top-right and approve the connection (MetaMask, OKX, Rabby, or any injected wallet).",
-                  "Snake DEX runs on Arc Testnet. Make sure your wallet is connected to Arc Testnet (Chain ID 5042002).",
-                  "Open the Swap page, choose the token you want to sell and the token you want to receive.",
-                  "Enter an amount — the estimated output, price impact, and minimum received are calculated automatically.",
-                  "If swapping an ERC-20, approve the Router once. Then click 'Swap' and confirm in your wallet.",
-                  "Wait for the transaction to confirm; balances refresh automatically without a page reload.",
-                ].map((step, i) => (
-                  <li key={i} className="flex gap-4 rounded-xl border border-border/60 bg-card/40 p-4">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary text-sm font-semibold">{i + 1}</span>
-                    <span className="text-muted-foreground leading-relaxed">{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-
-            <section id="liquidity-pools" className="scroll-mt-28">
-              <h2 className="text-2xl font-display font-semibold mb-4">Liquidity Pools</h2>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="rounded-xl border border-border/60 bg-card/40 p-5">
-                  <h3 className="font-medium mb-2">Create a Pool</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    On the Liquidity page, pick two tokens. If no pair exists, click <span className="text-foreground">Create Pair</span> — the Factory
-                    deploys a new pair contract and the UI updates automatically to let you seed initial liquidity.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-card/40 p-5">
-                  <h3 className="font-medium mb-2">Add Liquidity</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Enter one amount; the paired amount auto-quotes from current reserves. Approve tokens if needed, then click
-                    <span className="text-foreground"> Add Liquidity</span> to receive LP tokens representing your share.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-card/40 p-5">
-                  <h3 className="font-medium mb-2">Remove Liquidity</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    From the Pools page, choose a position and the percentage to withdraw. Confirm the transaction — your share of the
-                    underlying tokens plus accrued fees is returned to your wallet.
-                  </p>
-                </div>
+            {/* Features */}
+            <section id="features" className="scroll-mt-32">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-xs uppercase tracking-[0.25em] text-primary/80">Features</span>
               </div>
-            </section>
-
-            <section id="supported-networks" className="scroll-mt-28">
-              <h2 className="text-2xl font-display font-semibold mb-4">Supported Networks</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                {SUPPORTED_CHAINS.map((c) => {
-                  const conf = CHAIN_CONFIG[c.id];
+              <h2 className="text-3xl font-display font-semibold mb-5">Core Features</h2>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {features.map((f) => {
+                  const Icon = f.icon;
                   return (
-                    <div key={c.id} className="rounded-xl border border-border/60 bg-card/40 p-5">
-                      <div className="flex items-center gap-3 mb-4">
-                        <img src={conf.logo} alt={c.name} className="h-10 w-10 rounded-full" />
-                        <div>
-                          <div className="font-medium">{c.name}</div>
-                          <div className="text-xs text-muted-foreground">Chain ID: {c.id}</div>
-                        </div>
+                    <div key={f.title} className="rounded-2xl border border-border/60 bg-card/40 p-6 hover:border-primary/40 transition-all group">
+                      <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/15 text-primary mb-4 group-hover:scale-110 transition-transform">
+                        <Icon className="h-5 w-5" />
                       </div>
-                      <dl className="text-sm space-y-2">
-                        <div className="flex justify-between gap-3">
-                          <dt className="text-muted-foreground">Native</dt>
-                          <dd className="font-mono">{c.nativeCurrency.symbol}</dd>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <dt className="text-muted-foreground">RPC</dt>
-                          <dd className="font-mono truncate max-w-[60%]" title={c.rpcUrls.default.http[0]}>{c.rpcUrls.default.http[0]}</dd>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <dt className="text-muted-foreground">Explorer</dt>
-                          <dd>
-                            <a className="text-primary hover:underline inline-flex items-center gap-1" href={conf.explorer} target="_blank" rel="noreferrer">
-                              Open <ExternalLink className="h-3 w-3" />
-                            </a>
-                          </dd>
-                        </div>
-                      </dl>
+                      <h3 className="font-medium text-lg mb-1.5">{f.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
                     </div>
                   );
                 })}
               </div>
             </section>
 
-            <section id="smart-contracts" className="scroll-mt-28">
-              <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
-                <h2 className="text-2xl font-display font-semibold">Smart Contracts</h2>
-                <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 p-1">
-                  {SUPPORTED_CHAINS.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setSelectedChain(c.id)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                        selectedChain === c.id ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {c.name}
-                    </button>
-                  ))}
-                </div>
+            {/* Getting Started */}
+            <section id="getting-started" className="scroll-mt-32">
+              <div className="flex items-center gap-2 mb-3">
+                <Rocket className="h-4 w-4 text-primary" />
+                <span className="text-xs uppercase tracking-[0.25em] text-primary/80">Getting Started</span>
               </div>
-              <div className="space-y-3">
-                <Addr label="Factory" address={cfg.contracts.factory} explorer={cfg.explorer} />
-                <Addr label="Router" address={cfg.contracts.router} explorer={cfg.explorer} />
-                <Addr label={`Wrapped ${chainMeta?.nativeCurrency.symbol ?? "Native"}`} address={cfg.contracts.weth} explorer={cfg.explorer} />
-                <Addr label="Multicall" address={cfg.contracts.multicall} explorer={cfg.explorer} />
+              <h2 className="text-3xl font-display font-semibold mb-5">Your First Swap in 4 Steps</h2>
+              <ol className="space-y-3">
+                {steps.map((s, i) => {
+                  const Icon = s.icon;
+                  return (
+                    <li key={i} className="flex gap-4 rounded-2xl border border-border/60 bg-card/40 p-5 hover:border-primary/40 transition-all">
+                      <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                        <Icon className="h-5 w-5" />
+                        <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                          {i + 1}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-medium text-foreground mb-1">{s.title}</div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+
+            {/* Smart Contracts */}
+            <section id="smart-contracts" className="scroll-mt-32">
+              <div className="flex items-center gap-2 mb-3">
+                <FileCode2 className="h-4 w-4 text-primary" />
+                <span className="text-xs uppercase tracking-[0.25em] text-primary/80">Smart Contracts</span>
+              </div>
+              <h2 className="text-3xl font-display font-semibold mb-2">Deployed Contracts</h2>
+              <p className="text-muted-foreground mb-5">
+                All contracts are verified on the {chain.name} block explorer.
+              </p>
+              <div className="grid gap-3">
+                <ContractCard label="Factory" description="Deploys and tracks all pair contracts" address={cfg.contracts.factory} explorer={cfg.explorer} />
+                <ContractCard label="Router" description="Entry point for swaps and liquidity operations" address={cfg.contracts.router} explorer={cfg.explorer} />
+                <ContractCard label={`Wrapped ${chain.nativeCurrency.symbol}`} description="ERC-20 wrapper around the native token" address={cfg.contracts.weth} explorer={cfg.explorer} />
+                <ContractCard label="Multicall" description="Aggregates multiple read calls in a single RPC" address={cfg.contracts.multicall} explorer={cfg.explorer} />
               </div>
             </section>
 
-            <section id="faq" className="scroll-mt-28">
-              <h2 className="text-2xl font-display font-semibold mb-4">FAQ</h2>
+            {/* Network */}
+            <section id="network" className="scroll-mt-32">
+              <div className="flex items-center gap-2 mb-3">
+                <Network className="h-4 w-4 text-primary" />
+                <span className="text-xs uppercase tracking-[0.25em] text-primary/80">Network</span>
+              </div>
+              <h2 className="text-3xl font-display font-semibold mb-5">Network Information</h2>
+              <div className="rounded-2xl border border-border/60 bg-card/40 p-6 md:p-8">
+                <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border/40">
+                  <img src={cfg.logo} alt={chain.name} className="h-14 w-14 rounded-full ring-2 ring-primary/20" />
+                  <div>
+                    <div className="text-xl font-medium">{chain.name}</div>
+                    <div className="text-sm text-muted-foreground">Powered by LitVM LiteForge</div>
+                  </div>
+                </div>
+                <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                  <div>
+                    <dt className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Network Name</dt>
+                    <dd className="font-medium">{chain.name}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Chain ID</dt>
+                    <dd className="font-mono">{chain.id}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Native Currency</dt>
+                    <dd className="font-medium">{chain.nativeCurrency.name} ({chain.nativeCurrency.symbol})</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Decimals</dt>
+                    <dd className="font-mono">{chain.nativeCurrency.decimals}</dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-xs uppercase tracking-wider text-muted-foreground mb-1">RPC Endpoint</dt>
+                    <dd className="font-mono text-xs sm:text-sm break-all bg-background/40 rounded-lg px-3 py-2 border border-border/40 flex items-center justify-between gap-2">
+                      <span>{chain.rpcUrls.default.http[0]}</span>
+                      <CopyButton value={chain.rpcUrls.default.http[0]} />
+                    </dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Block Explorer</dt>
+                    <dd>
+                      <a
+                        href={cfg.explorer}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-primary hover:underline font-mono text-sm"
+                      >
+                        {cfg.explorer} <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            </section>
+
+            {/* FAQ */}
+            <section id="faq" className="scroll-mt-32">
+              <div className="flex items-center gap-2 mb-3">
+                <HelpCircle className="h-4 w-4 text-primary" />
+                <span className="text-xs uppercase tracking-[0.25em] text-primary/80">FAQ</span>
+              </div>
+              <h2 className="text-3xl font-display font-semibold mb-5">Frequently Asked Questions</h2>
               <div className="space-y-3">
-                {[
-                  {
-                    q: "Is Shadow LTC custodial?",
-                    a: "No. You connect your own wallet and sign every transaction. Shadow LTC never holds your funds.",
-                  },
-                  {
-                    q: "Which wallets are supported?",
-                    a: "MetaMask, OKX Wallet, Rabby Wallet, and any EIP-1193 injected browser wallet.",
-                  },
-                  {
-                    q: "What are the trading fees?",
-                    a: "Each swap charges a standard 0.30% fee that goes to liquidity providers proportionally to their pool share.",
-                  },
-                  {
-                    q: "Why do I need to approve a token before swapping?",
-                    a: "ERC-20 standard requires you to authorize the Router contract to move tokens on your behalf. This is a one-time per-token action.",
-                  },
-                  {
-                    q: "What is impermanent loss?",
-                    a: "When token prices in a pool diverge, the value of LP tokens can be lower than simply holding the tokens. Fees earned help offset this.",
-                  },
-                  {
-                    q: "Can I add my own token?",
-                    a: "Yes. On the token selector, paste any ERC-20 address. It will be imported and marked CUSTOM in your local list.",
-                  },
-                ].map((f, i) => (
-                  <details key={i} className="group rounded-xl border border-border/60 bg-card/40 p-5 open:bg-card/60 transition-colors">
-                    <summary className="cursor-pointer list-none flex items-center justify-between gap-4 font-medium">
+                {faqs.map((f, i) => (
+                  <details
+                    key={i}
+                    className="group rounded-2xl border border-border/60 bg-card/40 p-5 open:bg-card/60 hover:border-primary/40 transition-all"
+                  >
+                    <summary className="cursor-pointer list-none flex items-center justify-between gap-4 font-medium text-foreground">
                       <span>{f.q}</span>
-                      <span className="text-primary text-xl leading-none transition-transform group-open:rotate-45">+</span>
+                      <span className="text-primary text-2xl leading-none transition-transform group-open:rotate-45 shrink-0">
+                        +
+                      </span>
                     </summary>
                     <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
                   </details>
                 ))}
               </div>
             </section>
+
+            <div className="pt-8 pb-4 text-center text-xs text-muted-foreground">
+              Need more help? Reach out through the project's community channels.
+            </div>
           </main>
         </div>
       </div>
