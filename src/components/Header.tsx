@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import logo from "@/assets/snake-logo.png";
 import { WalletButton } from "./WalletButton";
-import { NetworkSelector } from "./NetworkSelector";
+
 
 const navItems = [
   { to: "/swap", label: "Swap" },
@@ -36,7 +36,6 @@ export function Header() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          <NetworkSelector />
           <WalletButton />
         </div>
       </div>

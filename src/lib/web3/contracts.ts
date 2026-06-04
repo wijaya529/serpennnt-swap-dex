@@ -1,5 +1,5 @@
 import { useChainId } from "wagmi";
-import { arcTestnet, iopnTestnet } from "./chain";
+import { arcTestnet } from "./chain";
 
 export type TokenInfo = {
   address: `0x${string}`;
@@ -19,12 +19,6 @@ export type ChainContracts = {
 
 const cmc = (id: number) => `https://s2.coinmarketcap.com/static/img/coins/64x64/${id}.png`;
 
-// IOPN doesn't have a CMC listing — use a gradient mark.
-const IOPN_LOGO =
-  "data:image/svg+xml;utf8," +
-  encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%234f46e5'/><stop offset='1' stop-color='%2306b6d4'/></linearGradient></defs><circle cx='32' cy='32' r='30' fill='url(%23g)'/><text x='50%25' y='56%25' text-anchor='middle' font-family='Inter,system-ui' font-size='20' font-weight='800' fill='white'>OPN</text></svg>`,
-  );
 
 // ---------- Arc Testnet ----------
 const ARC_CONTRACTS: ChainContracts = {
@@ -53,30 +47,6 @@ const ARC_TOKENS: TokenInfo[] = [
   { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", symbol: "EURC", name: "EURC", decimals: 6, logo: cmc(20641) },
 ];
 
-// ---------- IOPN Testnet ----------
-const IOPN_CONTRACTS: ChainContracts = {
-  factory: "0xBc5189f809109A8CEbD0867A92eCeC409152817D",
-  weth: "0x2D306B3C817F11921404003Bbe14E56bE085fA59",
-  router: "0x8B83F2844fb6346519E0522A8b67fcBC62620196",
-  multicall: "0xaBe9a22F0c65ed9FCB4a210410a3943Ef0a31f85",
-};
-
-const IOPN_NATIVE: TokenInfo = {
-  address: "0x0000000000000000000000000000000000000000",
-  symbol: "OPN",
-  name: "OPN (Native)",
-  decimals: 18,
-  logo: IOPN_LOGO,
-  isNative: true,
-};
-
-const IOPN_TOKENS: TokenInfo[] = [
-  IOPN_NATIVE,
-  { address: IOPN_CONTRACTS.weth, symbol: "WOPN", name: "Wrapped OPN", decimals: 18, logo: IOPN_LOGO },
-  { address: "0x3e01b4d892E0D0A219eF8BBe7e260a6bc8d9B31b", symbol: "USDT", name: "Tether USD", decimals: 18, logo: cmc(825) },
-  { address: "0x92cF36713a5622351c9489D5556B90B321873607", symbol: "BNB", name: "BNB", decimals: 18, logo: cmc(1839) },
-];
-
 // ---------- Per-chain registry ----------
 export type ChainConfig = {
   chainId: number;
@@ -99,16 +69,6 @@ export const CHAIN_CONFIG: Record<number, ChainConfig> = {
     contracts: ARC_CONTRACTS,
     nativeToken: ARC_NATIVE,
     tokens: ARC_TOKENS,
-  },
-  [iopnTestnet.id]: {
-    chainId: iopnTestnet.id,
-    name: "IOPN Testnet",
-    shortName: "IOPN",
-    logo: IOPN_LOGO,
-    explorer: "https://testnet.iopn.tech",
-    contracts: IOPN_CONTRACTS,
-    nativeToken: IOPN_NATIVE,
-    tokens: IOPN_TOKENS,
   },
 };
 

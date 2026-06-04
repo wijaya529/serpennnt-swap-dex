@@ -1,9 +1,9 @@
 import { http, createConfig } from "wagmi";
 import { injected, metaMask } from "wagmi/connectors";
-import { arcTestnet, iopnTestnet } from "./chain";
+import { arcTestnet } from "./chain";
 
 export const wagmiConfig = createConfig({
-  chains: [arcTestnet, iopnTestnet],
+  chains: [arcTestnet],
   connectors: [
     metaMask({ dappMetadata: { name: "Snake DEX" } }),
     injected({ target: "metaMask" }),
@@ -28,7 +28,6 @@ export const wagmiConfig = createConfig({
   ],
   transports: {
     [arcTestnet.id]: http(),
-    [iopnTestnet.id]: http(),
   },
   ssr: true,
 });

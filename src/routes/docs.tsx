@@ -130,7 +130,7 @@ function DocsPage() {
               <ol className="space-y-3">
                 {[
                   "Click 'Connect Wallet' in the top-right and approve the connection (MetaMask, OKX, Rabby, or any injected wallet).",
-                  "Use the network selector to switch to a supported chain (Arc Testnet or IOPN Testnet).",
+                  "Snake DEX runs on Arc Testnet. Make sure your wallet is connected to Arc Testnet (Chain ID 5042002).",
                   "Open the Swap page, choose the token you want to sell and the token you want to receive.",
                   "Enter an amount — the estimated output, price impact, and minimum received are calculated automatically.",
                   "If swapping an ERC-20, approve the Router once. Then click 'Swap' and confirm in your wallet.",

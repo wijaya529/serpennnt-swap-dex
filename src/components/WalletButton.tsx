@@ -67,7 +67,7 @@ export function WalletButton() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => switchChain({ chainId: activeCfg.chainId as 5042002 | 984 })}
+            onClick={() => switchChain({ chainId: activeCfg.chainId as 5042002 })}
             className="border-destructive text-destructive hover:bg-destructive/10"
           >
             <AlertTriangle className="mr-1 h-4 w-4" /> Switch to {activeCfg.shortName}
@@ -105,7 +105,7 @@ export function WalletButton() {
                 key={key}
                 disabled={isPending}
                 onClick={() => {
-                  connect({ connector, chainId: activeCfg.chainId as 5042002 | 984 });
+                  connect({ connector, chainId: activeCfg.chainId as 5042002 });
                   setOpen(false);
                 }}
                 className="group w-full flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-card/40 hover:border-primary/60 hover:bg-primary/5 hover:shadow-[0_0_24px_-6px_hsl(var(--primary)/0.45)] transition-all duration-200 disabled:opacity-50 hover:-translate-y-0.5"
