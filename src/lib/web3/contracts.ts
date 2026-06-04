@@ -1,5 +1,5 @@
 import { useChainId } from "wagmi";
-import { arcTestnet, iopnTestnet } from "./chain";
+import { arcTestnet } from "./chain";
 
 export type TokenInfo = {
   address: `0x${string}`;
@@ -51,30 +51,6 @@ const ARC_TOKENS: TokenInfo[] = [
   { address: "0xDF1e9F36BbB046EfCfa9097127d4a47309aDDc2d", symbol: "HYPE", name: "Hyperliquid", decimals: 18, logo: cmc(32196) },
   { address: "0x4dc1c2525c79B9Ee3c8491ec6ac336BbED7aC3dF", symbol: "BNB", name: "BNB", decimals: 18, logo: cmc(1839) },
   { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", symbol: "EURC", name: "EURC", decimals: 6, logo: cmc(20641) },
-];
-
-// ---------- IOPN Testnet ----------
-const IOPN_CONTRACTS: ChainContracts = {
-  factory: "0xBc5189f809109A8CEbD0867A92eCeC409152817D",
-  weth: "0x2D306B3C817F11921404003Bbe14E56bE085fA59",
-  router: "0x8B83F2844fb6346519E0522A8b67fcBC62620196",
-  multicall: "0xaBe9a22F0c65ed9FCB4a210410a3943Ef0a31f85",
-};
-
-const IOPN_NATIVE: TokenInfo = {
-  address: "0x0000000000000000000000000000000000000000",
-  symbol: "OPN",
-  name: "OPN (Native)",
-  decimals: 18,
-  logo: IOPN_LOGO,
-  isNative: true,
-};
-
-const IOPN_TOKENS: TokenInfo[] = [
-  IOPN_NATIVE,
-  { address: IOPN_CONTRACTS.weth, symbol: "WOPN", name: "Wrapped OPN", decimals: 18, logo: IOPN_LOGO },
-  { address: "0x3e01b4d892E0D0A219eF8BBe7e260a6bc8d9B31b", symbol: "USDT", name: "Tether USD", decimals: 18, logo: cmc(825) },
-  { address: "0x92cF36713a5622351c9489D5556B90B321873607", symbol: "BNB", name: "BNB", decimals: 18, logo: cmc(1839) },
 ];
 
 // ---------- Per-chain registry ----------
