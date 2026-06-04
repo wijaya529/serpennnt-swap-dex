@@ -76,16 +76,6 @@ export const CHAIN_CONFIG: Record<number, ChainConfig> = {
     nativeToken: ARC_NATIVE,
     tokens: ARC_TOKENS,
   },
-  [iopnTestnet.id]: {
-    chainId: iopnTestnet.id,
-    name: "IOPN Testnet",
-    shortName: "IOPN",
-    logo: IOPN_LOGO,
-    explorer: "https://testnet.iopn.tech",
-    contracts: IOPN_CONTRACTS,
-    nativeToken: IOPN_NATIVE,
-    tokens: IOPN_TOKENS,
-  },
 };
 
 export const SUPPORTED_CHAIN_IDS = Object.keys(CHAIN_CONFIG).map(Number);
