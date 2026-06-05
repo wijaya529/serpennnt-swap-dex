@@ -309,7 +309,7 @@ function DocsPage() {
                   <img src={cfg.logo} alt={chain.name} className="h-14 w-14 rounded-full ring-2 ring-primary/20" />
                   <div>
                     <div className="text-xl font-medium">{chain.name}</div>
-                    <div className="text-sm text-muted-foreground">Powered by LitVM LiteForge</div>
+                    <div className="text-sm text-muted-foreground">The only network supported by Snake DEX</div>
                   </div>
                 </div>
                 <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
