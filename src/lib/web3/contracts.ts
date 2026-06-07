@@ -15,6 +15,7 @@ export type ChainContracts = {
   weth: `0x${string}`;
   router: `0x${string}`;
   multicall: `0x${string}`;
+  faucet: `0x${string}`;
 };
 
 const cmc = (id: number) => `https://s2.coinmarketcap.com/static/img/coins/64x64/${id}.png`;
