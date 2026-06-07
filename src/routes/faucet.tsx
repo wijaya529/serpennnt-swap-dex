@@ -113,7 +113,7 @@ function FaucetPage() {
         <div>
           <label className="text-xs uppercase tracking-widest text-muted-foreground">Token</label>
           <div className="mt-2">
-            <TokenSelector selected={token} onSelect={setToken} />
+            <TokenSelector value={token} onChange={setToken} />
           </div>
         </div>
 
