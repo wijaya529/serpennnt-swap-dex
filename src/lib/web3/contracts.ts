@@ -15,6 +15,7 @@ export type ChainContracts = {
   weth: `0x${string}`;
   router: `0x${string}`;
   multicall: `0x${string}`;
+  faucet: `0x${string}`;
 };
 
 const cmc = (id: number) => `https://s2.coinmarketcap.com/static/img/coins/64x64/${id}.png`;
@@ -26,6 +27,7 @@ const ARC_CONTRACTS: ChainContracts = {
   weth: "0xAad965DAD0eF78198426abD83339E61713188496",
   router: "0x6A0257A3A9DD69f5eC8BB0a5c469CE17b003B643",
   multicall: "0x18efD372cab9d9ff31089b8f28E967Ce87Dd6B65",
+  faucet: "0xd7CD9c15bD860DDB84EF67d497D5ebed0AA621c0",
 };
 
 const ARC_NATIVE: TokenInfo = {
@@ -123,4 +125,17 @@ export const PAIR_ABI = [
   { inputs: [], name: "token1", outputs: [{ type: "address" }], stateMutability: "view", type: "function" },
   { inputs: [], name: "totalSupply", outputs: [{ type: "uint256" }], stateMutability: "view", type: "function" },
   { inputs: [{ name: "owner", type: "address" }], name: "balanceOf", outputs: [{ type: "uint256" }], stateMutability: "view", type: "function" },
+] as const;
+
+export const FAUCET_ABI = [
+  { inputs: [{ name: "token", type: "address" }, { name: "amount", type: "uint256" }], name: "adminWithdraw", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "token", type: "address" }], name: "claimFaucet", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "token", type: "address" }, { name: "amount", type: "uint256" }], name: "depositToken", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "amount", type: "uint256" }], name: "setFaucetAmount", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "token", type: "address" }, { name: "allowed", type: "bool" }], name: "setToken", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "token", type: "address" }, { name: "amount", type: "uint256" }], name: "withdrawToken", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "", type: "address" }], name: "allowedTokens", outputs: [{ type: "bool" }], stateMutability: "view", type: "function" },
+  { inputs: [{ name: "", type: "address" }, { name: "", type: "address" }], name: "deposits", outputs: [{ type: "uint256" }], stateMutability: "view", type: "function" },
+  { inputs: [], name: "faucetAmount", outputs: [{ type: "uint256" }], stateMutability: "view", type: "function" },
+  { inputs: [], name: "owner", outputs: [{ type: "address" }], stateMutability: "view", type: "function" },
 ] as const;
