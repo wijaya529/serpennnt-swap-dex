@@ -126,3 +126,16 @@ export const PAIR_ABI = [
   { inputs: [], name: "totalSupply", outputs: [{ type: "uint256" }], stateMutability: "view", type: "function" },
   { inputs: [{ name: "owner", type: "address" }], name: "balanceOf", outputs: [{ type: "uint256" }], stateMutability: "view", type: "function" },
 ] as const;
+
+export const FAUCET_ABI = [
+  { inputs: [{ name: "token", type: "address" }, { name: "amount", type: "uint256" }], name: "adminWithdraw", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "token", type: "address" }], name: "claimFaucet", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "token", type: "address" }, { name: "amount", type: "uint256" }], name: "depositToken", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "amount", type: "uint256" }], name: "setFaucetAmount", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "token", type: "address" }, { name: "allowed", type: "bool" }], name: "setToken", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "token", type: "address" }, { name: "amount", type: "uint256" }], name: "withdrawToken", outputs: [], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "", type: "address" }], name: "allowedTokens", outputs: [{ type: "bool" }], stateMutability: "view", type: "function" },
+  { inputs: [{ name: "", type: "address" }, { name: "", type: "address" }], name: "deposits", outputs: [{ type: "uint256" }], stateMutability: "view", type: "function" },
+  { inputs: [], name: "faucetAmount", outputs: [{ type: "uint256" }], stateMutability: "view", type: "function" },
+  { inputs: [], name: "owner", outputs: [{ type: "address" }], stateMutability: "view", type: "function" },
+] as const;
