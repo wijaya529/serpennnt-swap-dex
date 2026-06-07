@@ -13,6 +13,7 @@ import { Route as SwapRouteImport } from './routes/swap'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as PoolsRouteImport } from './routes/pools'
 import { Route as LiquidityRouteImport } from './routes/liquidity'
+import { Route as FaucetRouteImport } from './routes/faucet'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -36,6 +37,11 @@ const LiquidityRoute = LiquidityRouteImport.update({
   path: '/liquidity',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FaucetRoute = FaucetRouteImport.update({
+  id: '/faucet',
+  path: '/faucet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
@@ -50,6 +56,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
+  '/faucet': typeof FaucetRoute
   '/liquidity': typeof LiquidityRoute
   '/pools': typeof PoolsRoute
   '/portfolio': typeof PortfolioRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
+  '/faucet': typeof FaucetRoute
   '/liquidity': typeof LiquidityRoute
   '/pools': typeof PoolsRoute
   '/portfolio': typeof PortfolioRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/docs': typeof DocsRoute
+  '/faucet': typeof FaucetRoute
   '/liquidity': typeof LiquidityRoute
   '/pools': typeof PoolsRoute
   '/portfolio': typeof PortfolioRoute
@@ -74,13 +83,28 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/docs' | '/liquidity' | '/pools' | '/portfolio' | '/swap'
+  fullPaths:
+    | '/'
+    | '/docs'
+    | '/faucet'
+    | '/liquidity'
+    | '/pools'
+    | '/portfolio'
+    | '/swap'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/docs' | '/liquidity' | '/pools' | '/portfolio' | '/swap'
+  to:
+    | '/'
+    | '/docs'
+    | '/faucet'
+    | '/liquidity'
+    | '/pools'
+    | '/portfolio'
+    | '/swap'
   id:
     | '__root__'
     | '/'
     | '/docs'
+    | '/faucet'
     | '/liquidity'
     | '/pools'
     | '/portfolio'
@@ -90,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DocsRoute: typeof DocsRoute
+  FaucetRoute: typeof FaucetRoute
   LiquidityRoute: typeof LiquidityRoute
   PoolsRoute: typeof PoolsRoute
   PortfolioRoute: typeof PortfolioRoute
@@ -126,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LiquidityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/faucet': {
+      id: '/faucet'
+      path: '/faucet'
+      fullPath: '/faucet'
+      preLoaderRoute: typeof FaucetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/docs': {
       id: '/docs'
       path: '/docs'
@@ -146,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DocsRoute: DocsRoute,
+  FaucetRoute: FaucetRoute,
   LiquidityRoute: LiquidityRoute,
   PoolsRoute: PoolsRoute,
   PortfolioRoute: PortfolioRoute,
@@ -154,3 +187,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
